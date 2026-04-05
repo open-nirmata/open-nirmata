@@ -1,0 +1,1394 @@
+components:
+    securitySchemes:
+        Bearer Auth:
+            bearerFormat: JWT
+            description: Required for protected endpoints. Use the Bearer token obtained after authentication.
+            scheme: bearer
+            type: http
+info:
+    description: |
+        # Documentation for Open Nirmata APIs
+        **Open Nirmata** is an agent creation platform.
+
+
+        ![Open Nirmata Logo](/open-nirmata.png)
+    title: Anvitra Shilp APIs
+    version: 1.0.0
+openapi: 3.0.3
+paths:
+    /health:
+        get:
+            description: Health Check
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    success:
+                                        type: boolean
+                                    version:
+                                        type: string
+                                type: object
+                    description: Ingestion is successful
+            summary: Health Check
+            tags:
+                - health
+    /knowledgebases:
+        get:
+            description: List configured knowledgebase providers with optional provider, enabled, and search filters.
+            parameters:
+                - description: Filter by provider (milvus, mixedbread, zeroentropy, algolia, qdrant)
+                  in: query
+                  name: provider
+                - description: Filter by enabled status
+                  in: query
+                  name: enabled
+                - description: Search by name, description, index, namespace, or embedding model
+                  in: query
+                  name: q
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    count:
+                                        type: integer
+                                    data:
+                                        items:
+                                            properties:
+                                                auth_configured:
+                                                    type: boolean
+                                                base_url:
+                                                    type: string
+                                                config:
+                                                    additionalProperties: {}
+                                                    type: object
+                                                created_at:
+                                                    format: date-time
+                                                    nullable: true
+                                                    type: string
+                                                description:
+                                                    type: string
+                                                embedding_model:
+                                                    type: string
+                                                enabled:
+                                                    type: boolean
+                                                id:
+                                                    type: string
+                                                index_name:
+                                                    type: string
+                                                name:
+                                                    type: string
+                                                namespace:
+                                                    type: string
+                                                provider:
+                                                    type: string
+                                                updated_at:
+                                                    format: date-time
+                                                    nullable: true
+                                                    type: string
+                                            type: object
+                                        type: array
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Knowledgebases fetched successfully
+            summary: List Knowledgebases
+            tags:
+                - knowledgebases
+        post:
+            description: Create a saved knowledgebase configuration for Milvus, Mixedbread, ZeroEntropy, Algolia, or Qdrant. Shilp can be added later.
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                api_key:
+                                    type: string
+                                auth:
+                                    additionalProperties: {}
+                                    type: object
+                                base_url:
+                                    type: string
+                                config:
+                                    additionalProperties: {}
+                                    type: object
+                                description:
+                                    type: string
+                                embedding_model:
+                                    type: string
+                                enabled:
+                                    nullable: true
+                                    type: boolean
+                                index_name:
+                                    type: string
+                                name:
+                                    type: string
+                                namespace:
+                                    type: string
+                                provider:
+                                    type: string
+                            type: object
+                description: Knowledgebase details
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            base_url:
+                                                type: string
+                                            config:
+                                                additionalProperties: {}
+                                                type: object
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            description:
+                                                type: string
+                                            embedding_model:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            index_name:
+                                                type: string
+                                            name:
+                                                type: string
+                                            namespace:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Knowledgebase created successfully
+            summary: Create Knowledgebase
+            tags:
+                - knowledgebases
+    /knowledgebases/{id}:
+        delete:
+            description: Delete a saved knowledgebase configuration by ID.
+            parameters:
+                - description: Knowledgebase ID
+                  in: path
+                  name: id
+                  required: true
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            base_url:
+                                                type: string
+                                            config:
+                                                additionalProperties: {}
+                                                type: object
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            description:
+                                                type: string
+                                            embedding_model:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            index_name:
+                                                type: string
+                                            name:
+                                                type: string
+                                            namespace:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Knowledgebase deleted successfully
+            summary: Delete Knowledgebase
+            tags:
+                - knowledgebases
+        get:
+            description: Fetch a single knowledgebase configuration by ID.
+            parameters:
+                - description: Knowledgebase ID
+                  in: path
+                  name: id
+                  required: true
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            base_url:
+                                                type: string
+                                            config:
+                                                additionalProperties: {}
+                                                type: object
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            description:
+                                                type: string
+                                            embedding_model:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            index_name:
+                                                type: string
+                                            name:
+                                                type: string
+                                            namespace:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Knowledgebase fetched successfully
+            summary: Get Knowledgebase
+            tags:
+                - knowledgebases
+        put:
+            description: Update a saved knowledgebase configuration by ID.
+            parameters:
+                - description: Knowledgebase ID
+                  in: path
+                  name: id
+                  required: true
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                api_key:
+                                    nullable: true
+                                    type: string
+                                auth:
+                                    additionalProperties: {}
+                                    nullable: true
+                                    type: object
+                                base_url:
+                                    nullable: true
+                                    type: string
+                                config:
+                                    additionalProperties: {}
+                                    nullable: true
+                                    type: object
+                                description:
+                                    nullable: true
+                                    type: string
+                                embedding_model:
+                                    nullable: true
+                                    type: string
+                                enabled:
+                                    nullable: true
+                                    type: boolean
+                                index_name:
+                                    nullable: true
+                                    type: string
+                                name:
+                                    nullable: true
+                                    type: string
+                                namespace:
+                                    nullable: true
+                                    type: string
+                                provider:
+                                    nullable: true
+                                    type: string
+                            type: object
+                description: Knowledgebase fields to update
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            base_url:
+                                                type: string
+                                            config:
+                                                additionalProperties: {}
+                                                type: object
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            description:
+                                                type: string
+                                            embedding_model:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            index_name:
+                                                type: string
+                                            name:
+                                                type: string
+                                            namespace:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Knowledgebase updated successfully
+            summary: Update Knowledgebase
+            tags:
+                - knowledgebases
+    /llm-providers:
+        get:
+            description: List configured LLM providers with optional provider, enabled, and search filters.
+            parameters:
+                - description: Filter by provider (openai, ollama, anthropic, groq, openrouter, gemini)
+                  in: query
+                  name: provider
+                - description: Filter by enabled status
+                  in: query
+                  name: enabled
+                - description: Search by name, description, or default model
+                  in: query
+                  name: q
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    count:
+                                        type: integer
+                                    data:
+                                        items:
+                                            properties:
+                                                auth_configured:
+                                                    type: boolean
+                                                base_url:
+                                                    type: string
+                                                created_at:
+                                                    format: date-time
+                                                    nullable: true
+                                                    type: string
+                                                default_model:
+                                                    type: string
+                                                description:
+                                                    type: string
+                                                enabled:
+                                                    type: boolean
+                                                id:
+                                                    type: string
+                                                name:
+                                                    type: string
+                                                organization:
+                                                    type: string
+                                                project_id:
+                                                    type: string
+                                                provider:
+                                                    type: string
+                                                updated_at:
+                                                    format: date-time
+                                                    nullable: true
+                                                    type: string
+                                            type: object
+                                        type: array
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: LLM providers fetched successfully
+            summary: List LLM Providers
+            tags:
+                - llm-providers
+        post:
+            description: Create a saved LLM provider configuration for OpenAI, Ollama, Anthropic, Groq, OpenRouter, or Gemini.
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                api_key:
+                                    type: string
+                                base_url:
+                                    type: string
+                                default_model:
+                                    type: string
+                                description:
+                                    type: string
+                                enabled:
+                                    nullable: true
+                                    type: boolean
+                                name:
+                                    type: string
+                                organization:
+                                    type: string
+                                project_id:
+                                    type: string
+                                provider:
+                                    type: string
+                            type: object
+                description: LLM provider details
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            base_url:
+                                                type: string
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            default_model:
+                                                type: string
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            organization:
+                                                type: string
+                                            project_id:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: LLM provider created successfully
+            summary: Create LLM Provider
+            tags:
+                - llm-providers
+    /llm-providers/{id}:
+        delete:
+            description: Delete a saved LLM provider configuration by ID.
+            parameters:
+                - description: LLM provider ID
+                  in: path
+                  name: id
+                  required: true
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            base_url:
+                                                type: string
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            default_model:
+                                                type: string
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            organization:
+                                                type: string
+                                            project_id:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: LLM provider deleted successfully
+            summary: Delete LLM Provider
+            tags:
+                - llm-providers
+        get:
+            description: Fetch a single LLM provider configuration by ID.
+            parameters:
+                - description: LLM provider ID
+                  in: path
+                  name: id
+                  required: true
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            base_url:
+                                                type: string
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            default_model:
+                                                type: string
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            organization:
+                                                type: string
+                                            project_id:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: LLM provider fetched successfully
+            summary: Get LLM Provider
+            tags:
+                - llm-providers
+        put:
+            description: Update a saved LLM provider configuration by ID.
+            parameters:
+                - description: LLM provider ID
+                  in: path
+                  name: id
+                  required: true
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                api_key:
+                                    nullable: true
+                                    type: string
+                                base_url:
+                                    nullable: true
+                                    type: string
+                                default_model:
+                                    nullable: true
+                                    type: string
+                                description:
+                                    nullable: true
+                                    type: string
+                                enabled:
+                                    nullable: true
+                                    type: boolean
+                                name:
+                                    nullable: true
+                                    type: string
+                                organization:
+                                    nullable: true
+                                    type: string
+                                project_id:
+                                    nullable: true
+                                    type: string
+                                provider:
+                                    nullable: true
+                                    type: string
+                            type: object
+                description: LLM provider fields to update
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            base_url:
+                                                type: string
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            default_model:
+                                                type: string
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            organization:
+                                                type: string
+                                            project_id:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: LLM provider updated successfully
+            summary: Update LLM Provider
+            tags:
+                - llm-providers
+    /tools:
+        get:
+            description: List configured tools with optional type, provider, enabled, and search filters.
+            parameters:
+                - description: Filter by tool type (mcp, http, llm)
+                  in: query
+                  name: type
+                - description: Filter LLM tools by provider (openai, ollama, anthropic, groq, openrouter, gemini)
+                  in: query
+                  name: provider
+                - description: Filter by enabled status
+                  in: query
+                  name: enabled
+                - description: Search by name or description
+                  in: query
+                  name: q
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    count:
+                                        type: integer
+                                    data:
+                                        items:
+                                            properties:
+                                                auth_configured:
+                                                    type: boolean
+                                                config:
+                                                    nullable: true
+                                                    properties:
+                                                        args:
+                                                            items:
+                                                                type: string
+                                                            type: array
+                                                        command:
+                                                            type: string
+                                                        env:
+                                                            additionalProperties:
+                                                                type: string
+                                                            type: object
+                                                        headers:
+                                                            additionalProperties:
+                                                                type: string
+                                                            type: object
+                                                        method:
+                                                            type: string
+                                                        payload_template:
+                                                            type: string
+                                                        query_params:
+                                                            additionalProperties:
+                                                                type: string
+                                                            type: object
+                                                        server_url:
+                                                            type: string
+                                                        timeout_seconds:
+                                                            nullable: true
+                                                            type: integer
+                                                        transport:
+                                                            type: string
+                                                        url:
+                                                            type: string
+                                                    type: object
+                                                created_at:
+                                                    format: date-time
+                                                    nullable: true
+                                                    type: string
+                                                description:
+                                                    type: string
+                                                enabled:
+                                                    type: boolean
+                                                id:
+                                                    type: string
+                                                name:
+                                                    type: string
+                                                provider:
+                                                    type: string
+                                                tags:
+                                                    items:
+                                                        type: string
+                                                    type: array
+                                                type:
+                                                    type: string
+                                                updated_at:
+                                                    format: date-time
+                                                    nullable: true
+                                                    type: string
+                                            type: object
+                                        type: array
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Tools fetched successfully
+            summary: List Tools
+            tags:
+                - tools
+        post:
+            description: Create a new tool definition for the agent builder. HTTP tools require `config.url` and `config.method`, with optional payload/header/query settings. MCP tools support `transport=stdio` with `command`, `args`, `env`, or `transport=remote` with `server_url` and optional headers/auth.
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                auth:
+                                    additionalProperties: {}
+                                    type: object
+                                config:
+                                    nullable: true
+                                    properties:
+                                        args:
+                                            items:
+                                                type: string
+                                            type: array
+                                        command:
+                                            type: string
+                                        env:
+                                            additionalProperties:
+                                                type: string
+                                            type: object
+                                        headers:
+                                            additionalProperties:
+                                                type: string
+                                            type: object
+                                        method:
+                                            type: string
+                                        payload_template:
+                                            type: string
+                                        query_params:
+                                            additionalProperties:
+                                                type: string
+                                            type: object
+                                        server_url:
+                                            type: string
+                                        timeout_seconds:
+                                            nullable: true
+                                            type: integer
+                                        transport:
+                                            type: string
+                                        url:
+                                            type: string
+                                    type: object
+                                description:
+                                    type: string
+                                enabled:
+                                    nullable: true
+                                    type: boolean
+                                name:
+                                    type: string
+                                provider:
+                                    type: string
+                                tags:
+                                    items:
+                                        type: string
+                                    type: array
+                                type:
+                                    type: string
+                            type: object
+                description: Tool details
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            config:
+                                                nullable: true
+                                                properties:
+                                                    args:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    command:
+                                                        type: string
+                                                    env:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    headers:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    method:
+                                                        type: string
+                                                    payload_template:
+                                                        type: string
+                                                    query_params:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    server_url:
+                                                        type: string
+                                                    timeout_seconds:
+                                                        nullable: true
+                                                        type: integer
+                                                    transport:
+                                                        type: string
+                                                    url:
+                                                        type: string
+                                                type: object
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            tags:
+                                                items:
+                                                    type: string
+                                                type: array
+                                            type:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Tool created successfully
+            summary: Create Tool
+            tags:
+                - tools
+    /tools/{id}:
+        delete:
+            description: Delete a tool definition by ID.
+            parameters:
+                - description: Tool ID
+                  in: path
+                  name: id
+                  required: true
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            config:
+                                                nullable: true
+                                                properties:
+                                                    args:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    command:
+                                                        type: string
+                                                    env:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    headers:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    method:
+                                                        type: string
+                                                    payload_template:
+                                                        type: string
+                                                    query_params:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    server_url:
+                                                        type: string
+                                                    timeout_seconds:
+                                                        nullable: true
+                                                        type: integer
+                                                    transport:
+                                                        type: string
+                                                    url:
+                                                        type: string
+                                                type: object
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            tags:
+                                                items:
+                                                    type: string
+                                                type: array
+                                            type:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Tool deleted successfully
+            summary: Delete Tool
+            tags:
+                - tools
+        get:
+            description: Fetch a single tool definition by ID.
+            parameters:
+                - description: Tool ID
+                  in: path
+                  name: id
+                  required: true
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            config:
+                                                nullable: true
+                                                properties:
+                                                    args:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    command:
+                                                        type: string
+                                                    env:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    headers:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    method:
+                                                        type: string
+                                                    payload_template:
+                                                        type: string
+                                                    query_params:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    server_url:
+                                                        type: string
+                                                    timeout_seconds:
+                                                        nullable: true
+                                                        type: integer
+                                                    transport:
+                                                        type: string
+                                                    url:
+                                                        type: string
+                                                type: object
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            tags:
+                                                items:
+                                                    type: string
+                                                type: array
+                                            type:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Tool fetched successfully
+            summary: Get Tool
+            tags:
+                - tools
+        put:
+            description: Update a tool definition by ID. HTTP tools require `config.url` and `config.method`; MCP tools accept stdio (`command`, `args`, `env`) or remote (`server_url`, optional headers/auth) configuration.
+            parameters:
+                - description: Tool ID
+                  in: path
+                  name: id
+                  required: true
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                auth:
+                                    additionalProperties: {}
+                                    nullable: true
+                                    type: object
+                                config:
+                                    nullable: true
+                                    properties:
+                                        args:
+                                            items:
+                                                type: string
+                                            type: array
+                                        command:
+                                            type: string
+                                        env:
+                                            additionalProperties:
+                                                type: string
+                                            type: object
+                                        headers:
+                                            additionalProperties:
+                                                type: string
+                                            type: object
+                                        method:
+                                            type: string
+                                        payload_template:
+                                            type: string
+                                        query_params:
+                                            additionalProperties:
+                                                type: string
+                                            type: object
+                                        server_url:
+                                            type: string
+                                        timeout_seconds:
+                                            nullable: true
+                                            type: integer
+                                        transport:
+                                            type: string
+                                        url:
+                                            type: string
+                                    type: object
+                                description:
+                                    nullable: true
+                                    type: string
+                                enabled:
+                                    nullable: true
+                                    type: boolean
+                                name:
+                                    nullable: true
+                                    type: string
+                                provider:
+                                    nullable: true
+                                    type: string
+                                tags:
+                                    items:
+                                        type: string
+                                    nullable: true
+                                    type: array
+                                type:
+                                    nullable: true
+                                    type: string
+                            type: object
+                description: Tool fields to update
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            auth_configured:
+                                                type: boolean
+                                            config:
+                                                nullable: true
+                                                properties:
+                                                    args:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    command:
+                                                        type: string
+                                                    env:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    headers:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    method:
+                                                        type: string
+                                                    payload_template:
+                                                        type: string
+                                                    query_params:
+                                                        additionalProperties:
+                                                            type: string
+                                                        type: object
+                                                    server_url:
+                                                        type: string
+                                                    timeout_seconds:
+                                                        nullable: true
+                                                        type: integer
+                                                    transport:
+                                                        type: string
+                                                    url:
+                                                        type: string
+                                                type: object
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            provider:
+                                                type: string
+                                            tags:
+                                                items:
+                                                    type: string
+                                                type: array
+                                            type:
+                                                type: string
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Tool updated successfully
+            summary: Update Tool
+            tags:
+                - tools
+    /tools/test:
+        post:
+            description: Connect to a stdio or remote MCP server, run the MCP initialize handshake, and return the tools exposed by that server. Supports `npx ...` commands for stdio and remote HTTP/SSE endpoints.
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                config:
+                                    nullable: true
+                                    properties:
+                                        args:
+                                            items:
+                                                type: string
+                                            type: array
+                                        command:
+                                            type: string
+                                        env:
+                                            additionalProperties:
+                                                type: string
+                                            type: object
+                                        headers:
+                                            additionalProperties:
+                                                type: string
+                                            type: object
+                                        method:
+                                            type: string
+                                        payload_template:
+                                            type: string
+                                        query_params:
+                                            additionalProperties:
+                                                type: string
+                                            type: object
+                                        server_url:
+                                            type: string
+                                        timeout_seconds:
+                                            nullable: true
+                                            type: integer
+                                        transport:
+                                            type: string
+                                        url:
+                                            type: string
+                                    type: object
+                                timeout_seconds:
+                                    nullable: true
+                                    type: integer
+                            type: object
+                description: Runtime MCP connection settings
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            count:
+                                                type: integer
+                                            server_info:
+                                                nullable: true
+                                                properties:
+                                                    name:
+                                                        type: string
+                                                    version:
+                                                        type: string
+                                                type: object
+                                            server_url:
+                                                type: string
+                                            tools:
+                                                items:
+                                                    properties:
+                                                        annotations:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        description:
+                                                            type: string
+                                                        input_schema:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        name:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            transport:
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: MCP tools fetched successfully
+            summary: Test MCP Tool
+            tags:
+                - tools
