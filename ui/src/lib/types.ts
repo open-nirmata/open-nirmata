@@ -199,3 +199,97 @@ export interface HealthResponse {
     version?: string;
     message?: string;
 }
+
+// ─── Prompt Flows ────────────────────────────────────────────────────────────
+
+export type PromptFlowStageType = "chat" | "tool" | "retrieval" | "router";
+
+export interface PromptFlowResources {
+    llm_provider_id?: string;
+    model?: string;
+    system_prompt?: string;
+    temperature?: number;
+    tool_ids?: string[];
+    knowledgebase_ids?: string[];
+}
+
+export interface PromptFlowTransition {
+    label?: string;
+    condition?: string;
+    target_stage_id: string;
+}
+
+export interface PromptFlowStage {
+    id: string;
+    name: string;
+    type: PromptFlowStageType | string;
+    description?: string;
+    prompt?: string;
+    enabled?: boolean;
+    overrides?: PromptFlowResources;
+    transitions?: PromptFlowTransition[];
+}
+
+export interface PromptFlow {
+    id: string;
+    name: string;
+    description?: string;
+    enabled: boolean;
+    defaults?: PromptFlowResources;
+    entry_stage_id?: string;
+    stages?: PromptFlowStage[];
+    created_at?: string | null;
+    updated_at?: string | null;
+}
+
+export interface PromptFlowPayload {
+    name: string;
+    description?: string;
+    enabled?: boolean;
+    defaults?: PromptFlowResources;
+    entry_stage_id?: string;
+    stages: PromptFlowStage[];
+}
+
+export interface PromptFlowUpdatePayload {
+    name?: string;
+    description?: string;
+    enabled?: boolean;
+    defaults?: PromptFlowResources;
+    entry_stage_id?: string;
+    stages?: PromptFlowStage[];
+}
+
+export interface PromptFlowListResponse {
+    success: boolean;
+    data: PromptFlow[];
+    count: number;
+}
+
+export interface PromptFlowResponse {
+    success: boolean;
+    data?: PromptFlow;
+    message?: string;
+}
+
+export interface PromptFlowResolvedStage {
+    id: string;
+    name: string;
+    type: string;
+    enabled: boolean;
+    effective?: PromptFlowResources;
+    transition_count: number;
+}
+
+export interface PromptFlowValidateResult {
+    valid: boolean;
+    entry_stage_id?: string;
+    stages: PromptFlowResolvedStage[];
+    warnings?: string[];
+}
+
+export interface PromptFlowValidateResponse {
+    success: boolean;
+    data?: PromptFlowValidateResult;
+    message?: string;
+}

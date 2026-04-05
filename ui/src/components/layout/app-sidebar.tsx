@@ -1,10 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     BookOpenText,
     BrainCircuit,
+    ChevronLeft,
+    ChevronRight,
+    GitFork,
     HeartPulse,
     Sparkles,
     Wrench,
@@ -34,6 +38,12 @@ const navItems = [
         soon: false,
     },
     {
+        href: "/prompt-flows",
+        label: "Prompt Flows",
+        icon: GitFork,
+        soon: false,
+    },
+    {
         href: "/health",
         label: "Health",
         icon: HeartPulse,
@@ -43,19 +53,42 @@ const navItems = [
 
 export function AppSidebar() {
     const pathname = usePathname();
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    // Load collapsed state from localStorage on mount
+    useEffect(() => {
+        const saved = localStorage.getItem("sidebar-collapsed");
+        if (saved !== null) {
+            setIsCollapsed(saved === "true");
+        }
+    }, []);
+
+    // Save collapsed state to localStorage
+    const toggleCollapsed = () => {
+        const newState = !isCollapsed;
+        setIsCollapsed(newState);
+        localStorage.setItem("sidebar-collapsed", String(newState));
+    };
 
     return (
-        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col justify-between rounded-2xl border bg-card p-4 lg:flex">
+        <aside
+            className={cn(
+                "sticky top-0 hidden h-screen shrink-0 flex-col justify-between rounded-2xl border bg-card p-4 transition-all duration-300 ease-in-out lg:flex",
+                isCollapsed ? "w-20" : "w-72",
+            )}
+        >
             <div className="space-y-6">
                 <div className="space-y-3">
                     <div className="flex items-center gap-2">
                         <div className="flex size-10 items-center justify-center rounded-xl">
                             <img src="/open-nirmata.png" alt="Open Nirmata" className="size-5" />
                         </div>
-                        <div>
-                            <p className="text-sm font-semibold">Open Nirmata</p>
-                            <p className="text-xs text-muted-foreground">Agent Builder Console</p>
-                        </div>
+                        {!isCollapsed && (
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold truncate">Open Nirmata</p>
+                                <p className="text-xs text-muted-foreground truncate">Agent Builder Console</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -69,29 +102,51 @@ export function AppSidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                title={isCollapsed ? item.label : undefined}
                                 className={cn(
                                     buttonVariants({
                                         variant: isActive ? "default" : "ghost",
                                         size: "lg",
                                     }),
-                                    "w-full justify-start gap-2",
+                                    "w-full gap-2 transition-all",
+                                    isCollapsed ? "justify-center px-2" : "justify-start",
                                 )}
                             >
-                                <Icon className="size-4" />
-                                <span>{item.label}</span>
-                                {item.soon ? (
-                                    <Badge variant="outline" className="ml-auto text-[10px]">
-                                        Soon
-                                    </Badge>
-                                ) : null}
+                                <Icon className="size-4 shrink-0" />
+                                {!isCollapsed && (
+                                    <>
+                                        <span className="truncate">{item.label}</span>
+                                        {item.soon ? (
+                                            <Badge variant="outline" className="ml-auto text-[10px]">
+                                                Soon
+                                            </Badge>
+                                        ) : null}
+                                    </>
+                                )}
                             </Link>
                         );
                     })}
                 </nav>
             </div>
 
-            <div className="rounded-xl border bg-muted/40 p-3 text-xs text-muted-foreground">
-                No auth yet for v1. Set `NEXT_PUBLIC_API_BASE_URL` to point at the Go API.
+            <div className="space-y-3">
+                <button
+                    onClick={toggleCollapsed}
+                    className={cn(
+                        "flex w-full items-center gap-2 rounded-lg border bg-muted/40 p-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                        isCollapsed && "justify-center",
+                    )}
+                    title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                    {isCollapsed ? (
+                        <ChevronRight className="size-4" />
+                    ) : (
+                        <>
+                            <ChevronLeft className="size-4" />
+                            <span className="flex-1 text-left">Collapse</span>
+                        </>
+                    )}
+                </button>
             </div>
         </aside>
     );

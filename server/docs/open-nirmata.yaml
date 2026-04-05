@@ -799,6 +799,1004 @@ paths:
             summary: List LLM Provider Models
             tags:
                 - llm-providers
+    /prompt-flows:
+        get:
+            description: List prompt flow definitions for chat agents with optional enabled and search filters.
+            parameters:
+                - description: Filter by enabled status
+                  in: query
+                  name: enabled
+                - description: Search by name or description
+                  in: query
+                  name: q
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    count:
+                                        type: integer
+                                    data:
+                                        items:
+                                            properties:
+                                                created_at:
+                                                    format: date-time
+                                                    nullable: true
+                                                    type: string
+                                                defaults:
+                                                    nullable: true
+                                                    properties:
+                                                        knowledgebase_ids:
+                                                            items:
+                                                                type: string
+                                                            type: array
+                                                        llm_provider_id:
+                                                            type: string
+                                                        metadata:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        model:
+                                                            type: string
+                                                        system_prompt:
+                                                            type: string
+                                                        temperature:
+                                                            format: double
+                                                            nullable: true
+                                                            type: number
+                                                        tool_ids:
+                                                            items:
+                                                                type: string
+                                                            type: array
+                                                    type: object
+                                                description:
+                                                    type: string
+                                                enabled:
+                                                    type: boolean
+                                                entry_stage_id:
+                                                    type: string
+                                                id:
+                                                    type: string
+                                                name:
+                                                    type: string
+                                                stages:
+                                                    items:
+                                                        properties:
+                                                            config:
+                                                                additionalProperties: {}
+                                                                type: object
+                                                            description:
+                                                                type: string
+                                                            enabled:
+                                                                nullable: true
+                                                                type: boolean
+                                                            id:
+                                                                type: string
+                                                            name:
+                                                                type: string
+                                                            overrides:
+                                                                nullable: true
+                                                                properties:
+                                                                    knowledgebase_ids:
+                                                                        items:
+                                                                            type: string
+                                                                        type: array
+                                                                    llm_provider_id:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    model:
+                                                                        type: string
+                                                                    system_prompt:
+                                                                        type: string
+                                                                    temperature:
+                                                                        format: double
+                                                                        nullable: true
+                                                                        type: number
+                                                                    tool_ids:
+                                                                        items:
+                                                                            type: string
+                                                                        type: array
+                                                                type: object
+                                                            prompt:
+                                                                type: string
+                                                            transitions:
+                                                                items:
+                                                                    properties:
+                                                                        condition:
+                                                                            type: string
+                                                                        label:
+                                                                            type: string
+                                                                        target_stage_id:
+                                                                            type: string
+                                                                    type: object
+                                                                type: array
+                                                            type:
+                                                                type: string
+                                                        type: object
+                                                    type: array
+                                                updated_at:
+                                                    format: date-time
+                                                    nullable: true
+                                                    type: string
+                                            type: object
+                                        type: array
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Prompt flows fetched successfully
+            summary: List Prompt Flows
+            tags:
+                - prompt-flows
+        post:
+            description: Create a prompt flow configuration for chat agents with flow-level defaults and stage-level overrides. This endpoint stores design-time configuration only; it does not execute the flow.
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                defaults:
+                                    nullable: true
+                                    properties:
+                                        knowledgebase_ids:
+                                            items:
+                                                type: string
+                                            type: array
+                                        llm_provider_id:
+                                            type: string
+                                        metadata:
+                                            additionalProperties: {}
+                                            type: object
+                                        model:
+                                            type: string
+                                        system_prompt:
+                                            type: string
+                                        temperature:
+                                            format: double
+                                            nullable: true
+                                            type: number
+                                        tool_ids:
+                                            items:
+                                                type: string
+                                            type: array
+                                    type: object
+                                description:
+                                    type: string
+                                enabled:
+                                    nullable: true
+                                    type: boolean
+                                entry_stage_id:
+                                    type: string
+                                name:
+                                    type: string
+                                stages:
+                                    items:
+                                        properties:
+                                            config:
+                                                additionalProperties: {}
+                                                type: object
+                                            description:
+                                                type: string
+                                            enabled:
+                                                nullable: true
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            overrides:
+                                                nullable: true
+                                                properties:
+                                                    knowledgebase_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    llm_provider_id:
+                                                        type: string
+                                                    metadata:
+                                                        additionalProperties: {}
+                                                        type: object
+                                                    model:
+                                                        type: string
+                                                    system_prompt:
+                                                        type: string
+                                                    temperature:
+                                                        format: double
+                                                        nullable: true
+                                                        type: number
+                                                    tool_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                type: object
+                                            prompt:
+                                                type: string
+                                            transitions:
+                                                items:
+                                                    properties:
+                                                        condition:
+                                                            type: string
+                                                        label:
+                                                            type: string
+                                                        target_stage_id:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            type:
+                                                type: string
+                                        type: object
+                                    type: array
+                            type: object
+                description: Prompt flow details
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            defaults:
+                                                nullable: true
+                                                properties:
+                                                    knowledgebase_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    llm_provider_id:
+                                                        type: string
+                                                    metadata:
+                                                        additionalProperties: {}
+                                                        type: object
+                                                    model:
+                                                        type: string
+                                                    system_prompt:
+                                                        type: string
+                                                    temperature:
+                                                        format: double
+                                                        nullable: true
+                                                        type: number
+                                                    tool_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                type: object
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            entry_stage_id:
+                                                type: string
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            stages:
+                                                items:
+                                                    properties:
+                                                        config:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        description:
+                                                            type: string
+                                                        enabled:
+                                                            nullable: true
+                                                            type: boolean
+                                                        id:
+                                                            type: string
+                                                        name:
+                                                            type: string
+                                                        overrides:
+                                                            nullable: true
+                                                            properties:
+                                                                knowledgebase_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                                llm_provider_id:
+                                                                    type: string
+                                                                metadata:
+                                                                    additionalProperties: {}
+                                                                    type: object
+                                                                model:
+                                                                    type: string
+                                                                system_prompt:
+                                                                    type: string
+                                                                temperature:
+                                                                    format: double
+                                                                    nullable: true
+                                                                    type: number
+                                                                tool_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                            type: object
+                                                        prompt:
+                                                            type: string
+                                                        transitions:
+                                                            items:
+                                                                properties:
+                                                                    condition:
+                                                                        type: string
+                                                                    label:
+                                                                        type: string
+                                                                    target_stage_id:
+                                                                        type: string
+                                                                type: object
+                                                            type: array
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Prompt flow created successfully
+            summary: Create Prompt Flow
+            tags:
+                - prompt-flows
+    /prompt-flows/{id}:
+        delete:
+            description: Delete a saved prompt flow definition by ID.
+            parameters:
+                - description: Prompt flow ID
+                  in: path
+                  name: id
+                  required: true
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            defaults:
+                                                nullable: true
+                                                properties:
+                                                    knowledgebase_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    llm_provider_id:
+                                                        type: string
+                                                    metadata:
+                                                        additionalProperties: {}
+                                                        type: object
+                                                    model:
+                                                        type: string
+                                                    system_prompt:
+                                                        type: string
+                                                    temperature:
+                                                        format: double
+                                                        nullable: true
+                                                        type: number
+                                                    tool_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                type: object
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            entry_stage_id:
+                                                type: string
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            stages:
+                                                items:
+                                                    properties:
+                                                        config:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        description:
+                                                            type: string
+                                                        enabled:
+                                                            nullable: true
+                                                            type: boolean
+                                                        id:
+                                                            type: string
+                                                        name:
+                                                            type: string
+                                                        overrides:
+                                                            nullable: true
+                                                            properties:
+                                                                knowledgebase_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                                llm_provider_id:
+                                                                    type: string
+                                                                metadata:
+                                                                    additionalProperties: {}
+                                                                    type: object
+                                                                model:
+                                                                    type: string
+                                                                system_prompt:
+                                                                    type: string
+                                                                temperature:
+                                                                    format: double
+                                                                    nullable: true
+                                                                    type: number
+                                                                tool_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                            type: object
+                                                        prompt:
+                                                            type: string
+                                                        transitions:
+                                                            items:
+                                                                properties:
+                                                                    condition:
+                                                                        type: string
+                                                                    label:
+                                                                        type: string
+                                                                    target_stage_id:
+                                                                        type: string
+                                                                type: object
+                                                            type: array
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Prompt flow deleted successfully
+            summary: Delete Prompt Flow
+            tags:
+                - prompt-flows
+        get:
+            description: Fetch a single prompt flow definition by ID.
+            parameters:
+                - description: Prompt flow ID
+                  in: path
+                  name: id
+                  required: true
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            defaults:
+                                                nullable: true
+                                                properties:
+                                                    knowledgebase_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    llm_provider_id:
+                                                        type: string
+                                                    metadata:
+                                                        additionalProperties: {}
+                                                        type: object
+                                                    model:
+                                                        type: string
+                                                    system_prompt:
+                                                        type: string
+                                                    temperature:
+                                                        format: double
+                                                        nullable: true
+                                                        type: number
+                                                    tool_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                type: object
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            entry_stage_id:
+                                                type: string
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            stages:
+                                                items:
+                                                    properties:
+                                                        config:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        description:
+                                                            type: string
+                                                        enabled:
+                                                            nullable: true
+                                                            type: boolean
+                                                        id:
+                                                            type: string
+                                                        name:
+                                                            type: string
+                                                        overrides:
+                                                            nullable: true
+                                                            properties:
+                                                                knowledgebase_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                                llm_provider_id:
+                                                                    type: string
+                                                                metadata:
+                                                                    additionalProperties: {}
+                                                                    type: object
+                                                                model:
+                                                                    type: string
+                                                                system_prompt:
+                                                                    type: string
+                                                                temperature:
+                                                                    format: double
+                                                                    nullable: true
+                                                                    type: number
+                                                                tool_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                            type: object
+                                                        prompt:
+                                                            type: string
+                                                        transitions:
+                                                            items:
+                                                                properties:
+                                                                    condition:
+                                                                        type: string
+                                                                    label:
+                                                                        type: string
+                                                                    target_stage_id:
+                                                                        type: string
+                                                                type: object
+                                                            type: array
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Prompt flow fetched successfully
+            summary: Get Prompt Flow
+            tags:
+                - prompt-flows
+        put:
+            description: Update a saved prompt flow definition by ID.
+            parameters:
+                - description: Prompt flow ID
+                  in: path
+                  name: id
+                  required: true
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                defaults:
+                                    nullable: true
+                                    properties:
+                                        knowledgebase_ids:
+                                            items:
+                                                type: string
+                                            type: array
+                                        llm_provider_id:
+                                            type: string
+                                        metadata:
+                                            additionalProperties: {}
+                                            type: object
+                                        model:
+                                            type: string
+                                        system_prompt:
+                                            type: string
+                                        temperature:
+                                            format: double
+                                            nullable: true
+                                            type: number
+                                        tool_ids:
+                                            items:
+                                                type: string
+                                            type: array
+                                    type: object
+                                description:
+                                    nullable: true
+                                    type: string
+                                enabled:
+                                    nullable: true
+                                    type: boolean
+                                entry_stage_id:
+                                    nullable: true
+                                    type: string
+                                name:
+                                    nullable: true
+                                    type: string
+                                stages:
+                                    items:
+                                        properties:
+                                            config:
+                                                additionalProperties: {}
+                                                type: object
+                                            description:
+                                                type: string
+                                            enabled:
+                                                nullable: true
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            overrides:
+                                                nullable: true
+                                                properties:
+                                                    knowledgebase_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    llm_provider_id:
+                                                        type: string
+                                                    metadata:
+                                                        additionalProperties: {}
+                                                        type: object
+                                                    model:
+                                                        type: string
+                                                    system_prompt:
+                                                        type: string
+                                                    temperature:
+                                                        format: double
+                                                        nullable: true
+                                                        type: number
+                                                    tool_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                type: object
+                                            prompt:
+                                                type: string
+                                            transitions:
+                                                items:
+                                                    properties:
+                                                        condition:
+                                                            type: string
+                                                        label:
+                                                            type: string
+                                                        target_stage_id:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            type:
+                                                type: string
+                                        type: object
+                                    nullable: true
+                                    type: array
+                            type: object
+                description: Prompt flow fields to update
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            defaults:
+                                                nullable: true
+                                                properties:
+                                                    knowledgebase_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    llm_provider_id:
+                                                        type: string
+                                                    metadata:
+                                                        additionalProperties: {}
+                                                        type: object
+                                                    model:
+                                                        type: string
+                                                    system_prompt:
+                                                        type: string
+                                                    temperature:
+                                                        format: double
+                                                        nullable: true
+                                                        type: number
+                                                    tool_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                type: object
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            entry_stage_id:
+                                                type: string
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            stages:
+                                                items:
+                                                    properties:
+                                                        config:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        description:
+                                                            type: string
+                                                        enabled:
+                                                            nullable: true
+                                                            type: boolean
+                                                        id:
+                                                            type: string
+                                                        name:
+                                                            type: string
+                                                        overrides:
+                                                            nullable: true
+                                                            properties:
+                                                                knowledgebase_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                                llm_provider_id:
+                                                                    type: string
+                                                                metadata:
+                                                                    additionalProperties: {}
+                                                                    type: object
+                                                                model:
+                                                                    type: string
+                                                                system_prompt:
+                                                                    type: string
+                                                                temperature:
+                                                                    format: double
+                                                                    nullable: true
+                                                                    type: number
+                                                                tool_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                            type: object
+                                                        prompt:
+                                                            type: string
+                                                        transitions:
+                                                            items:
+                                                                properties:
+                                                                    condition:
+                                                                        type: string
+                                                                    label:
+                                                                        type: string
+                                                                    target_stage_id:
+                                                                        type: string
+                                                                type: object
+                                                            type: array
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Prompt flow updated successfully
+            summary: Update Prompt Flow
+            tags:
+                - prompt-flows
+    /prompt-flows/validate:
+        post:
+            description: Validate a prompt flow definition, including stage graph integrity and referenced llm providers, tools, and knowledgebases. This endpoint does not execute prompts or tools.
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                defaults:
+                                    nullable: true
+                                    properties:
+                                        knowledgebase_ids:
+                                            items:
+                                                type: string
+                                            type: array
+                                        llm_provider_id:
+                                            type: string
+                                        metadata:
+                                            additionalProperties: {}
+                                            type: object
+                                        model:
+                                            type: string
+                                        system_prompt:
+                                            type: string
+                                        temperature:
+                                            format: double
+                                            nullable: true
+                                            type: number
+                                        tool_ids:
+                                            items:
+                                                type: string
+                                            type: array
+                                    type: object
+                                description:
+                                    type: string
+                                enabled:
+                                    nullable: true
+                                    type: boolean
+                                entry_stage_id:
+                                    type: string
+                                name:
+                                    type: string
+                                stages:
+                                    items:
+                                        properties:
+                                            config:
+                                                additionalProperties: {}
+                                                type: object
+                                            description:
+                                                type: string
+                                            enabled:
+                                                nullable: true
+                                                type: boolean
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            overrides:
+                                                nullable: true
+                                                properties:
+                                                    knowledgebase_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    llm_provider_id:
+                                                        type: string
+                                                    metadata:
+                                                        additionalProperties: {}
+                                                        type: object
+                                                    model:
+                                                        type: string
+                                                    system_prompt:
+                                                        type: string
+                                                    temperature:
+                                                        format: double
+                                                        nullable: true
+                                                        type: number
+                                                    tool_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                type: object
+                                            prompt:
+                                                type: string
+                                            transitions:
+                                                items:
+                                                    properties:
+                                                        condition:
+                                                            type: string
+                                                        label:
+                                                            type: string
+                                                        target_stage_id:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            type:
+                                                type: string
+                                        type: object
+                                    type: array
+                            type: object
+                description: Prompt flow to validate
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            entry_stage_id:
+                                                type: string
+                                            stages:
+                                                items:
+                                                    properties:
+                                                        effective:
+                                                            nullable: true
+                                                            properties:
+                                                                knowledgebase_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                                llm_provider_id:
+                                                                    type: string
+                                                                metadata:
+                                                                    additionalProperties: {}
+                                                                    type: object
+                                                                model:
+                                                                    type: string
+                                                                system_prompt:
+                                                                    type: string
+                                                                temperature:
+                                                                    format: double
+                                                                    nullable: true
+                                                                    type: number
+                                                                tool_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                            type: object
+                                                        enabled:
+                                                            type: boolean
+                                                        id:
+                                                            type: string
+                                                        name:
+                                                            type: string
+                                                        transition_count:
+                                                            type: integer
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            valid:
+                                                type: boolean
+                                            warnings:
+                                                items:
+                                                    type: string
+                                                type: array
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Prompt flow validated successfully
+            summary: Validate Prompt Flow
+            tags:
+                - prompt-flows
     /tools:
         get:
             description: List configured tools with optional type, provider, enabled, and search filters.

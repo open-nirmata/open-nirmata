@@ -6,6 +6,7 @@ import (
 	"open-nirmata/routes/health"
 	"open-nirmata/routes/knowledgebases"
 	"open-nirmata/routes/llmproviders"
+	"open-nirmata/routes/promptflows"
 	"open-nirmata/routes/tools"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,4 +18,5 @@ func RegisterRoutes(app fiber.Router, prv *providers.Provider, cnf config.Config
 	tools.RegisterRoutes(app, "/tools")
 	knowledgebases.RegisterRoutes(app, "/knowledgebases")
 	llmproviders.RegisterRoutes(app, "/llm-providers")
+	promptflows.RegisterRoutes(app, "/prompt-flows")
 }
