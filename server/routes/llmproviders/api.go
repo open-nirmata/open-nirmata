@@ -81,6 +81,59 @@ func GetLLMProvider(c *fiber.Ctx) error {
 	return c.JSON(dto.LLMProviderResponse{Success: true, Data: &item})
 }
 
+func ListLLMProviderModels(c *fiber.Ctx) error {
+	var req dto.ListLLMProviderModelsRequest
+	if err := c.BodyParser(&req); err != nil {
+		return badRequest(c, "invalid request body")
+	}
+
+	normalizedReq := normalizeLLMProviderModelsRequest(&req)
+	if normalizedReq.LLMProviderID != "" {
+		existingProvider, err := loadLLMProviderByRecordID(c, normalizedReq.LLMProviderID)
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return notFound(c, "llm provider not found")
+			}
+			if fiberErr, ok := err.(*fiber.Error); ok {
+				return badRequest(c, fiberErr.Message)
+			}
+			return internalError(c, "failed to load llm provider")
+		}
+		normalizedReq = mergeLLMProviderModelsRequest(existingProvider, normalizedReq)
+	}
+	if err := validateLLMProviderModelsRequest(normalizedReq); err != nil {
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			return badRequest(c, fiberErr.Message)
+		}
+		return internalError(c, "failed to validate llm provider request")
+	}
+
+	timeout, err := resolveLLMModelsTimeout(normalizedReq.TimeoutSeconds)
+	if err != nil {
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			return badRequest(c, fiberErr.Message)
+		}
+		return internalError(c, "failed to resolve timeout")
+	}
+
+	serviceProvider := providers.GetProviders(c)
+	if serviceProvider == nil || serviceProvider.S == nil || serviceProvider.S.LLMModels == nil {
+		return internalError(c, "llm model listing service is not configured")
+	}
+
+	modelsList, err := serviceProvider.S.LLMModels.ListModels(c.UserContext(), normalizedReq, timeout)
+	if err != nil {
+		return badGateway(c, "failed to list models from llm provider: "+err.Error())
+	}
+
+	return c.JSON(dto.ListLLMProviderModelsResponse{
+		Success: true,
+		Data:    modelsList,
+		Count:   len(modelsList),
+		Message: "llm provider models fetched successfully",
+	})
+}
+
 func CreateLLMProvider(c *fiber.Ctx) error {
 	var req dto.CreateLLMProviderRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -304,10 +357,18 @@ func loadLLMProviderByID(c *fiber.Ctx) (models.LLMProvider, error) {
 	if id == "" {
 		return models.LLMProvider{}, fiber.NewError(fiber.StatusBadRequest, "id is required")
 	}
+	return loadLLMProviderByRecordID(c, id)
+}
+
+func loadLLMProviderByRecordID(c *fiber.Ctx, id string) (models.LLMProvider, error) {
+	trimmedID := strings.TrimSpace(id)
+	if trimmedID == "" {
+		return models.LLMProvider{}, fiber.NewError(fiber.StatusBadRequest, "llm_provider_id is required")
+	}
 
 	database := providers.GetProviders(c).D
 	providerModel := models.GetLLMProviderModel()
-	result := database.FindOne(c.Context(), providerModel, bson.M{providerModel.IdKey: id})
+	result := database.FindOne(c.Context(), providerModel, bson.M{providerModel.IdKey: trimmedID})
 
 	var provider models.LLMProvider
 	if err := result.Decode(&provider); err != nil {

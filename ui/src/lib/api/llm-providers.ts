@@ -3,6 +3,8 @@ import type {
     LLMProviderListResponse,
     LLMProviderPayload,
     LLMProviderResponse,
+    ListLLMProviderModelsPayload,
+    ListLLMProviderModelsResponse,
 } from "@/lib/types";
 
 export type LLMProviderFilters = {
@@ -53,5 +55,12 @@ export async function updateProvider(id: string, payload: Partial<LLMProviderPay
 export async function deleteProvider(id: string) {
     return apiFetch<LLMProviderResponse>(`/llm-providers/${id}`, {
         method: "DELETE",
+    });
+}
+
+export async function listProviderModels(payload: ListLLMProviderModelsPayload) {
+    return apiFetch<ListLLMProviderModelsResponse>("/llm-providers/models", {
+        method: "POST",
+        body: JSON.stringify(payload),
     });
 }

@@ -57,7 +57,7 @@ func GenerateOpenAPI() ([]byte, error) {
 	swagger := &openapi3.T{
 		OpenAPI: "3.0.3",
 		Info: &openapi3.Info{
-			Title:       "Anvitra Shilp APIs",
+			Title:       "Open Nirmata APIs",
 			Description: intoDescription,
 			Version:     "1.0.0",
 		},

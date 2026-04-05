@@ -122,6 +122,36 @@ export interface LLMProviderResponse {
     message?: string;
 }
 
+export interface LLMModel {
+    id: string;
+    name: string;
+    provider: string;
+    description?: string;
+    owned_by?: string;
+    context_window?: number;
+    input_token_limit?: number;
+    output_token_limit?: number;
+    capabilities?: string[];
+    raw?: JsonObject;
+}
+
+export interface ListLLMProviderModelsPayload {
+    llm_provider_id?: string;
+    provider?: LLMProviderKind;
+    api_key?: string;
+    base_url?: string;
+    organization?: string;
+    project_id?: string;
+    timeout_seconds?: number;
+}
+
+export interface ListLLMProviderModelsResponse {
+    success: boolean;
+    data: LLMModel[];
+    count: number;
+    message?: string;
+}
+
 export interface Knowledgebase {
     id: string;
     name: string;

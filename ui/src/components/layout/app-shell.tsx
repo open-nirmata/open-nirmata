@@ -17,9 +17,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                                     AI agent platform admin UI
                                 </h1>
                             </div>
-                            <div className="rounded-lg border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                                API base: <span className="font-medium text-foreground">{API_BASE_URL}</span>
-                            </div>
                         </div>
                         <p className="max-w-2xl text-sm text-muted-foreground">
                             Manage tools today and keep the structure ready for knowledge bases,

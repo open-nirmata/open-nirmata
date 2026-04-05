@@ -16,7 +16,7 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Open Nirmata UI",
+  title: "Open Nirmata",
   description: "Admin console for building AI agents on Open Nirmata.",
 };
 

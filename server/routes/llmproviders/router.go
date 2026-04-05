@@ -14,6 +14,7 @@ var routeTags = []string{"llm-providers"}
 func RegisterRoutes(router fiber.Router, path string) {
 	router.Get(path, ListLLMProviders)
 	router.Post(path, CreateLLMProvider)
+	router.Post(path+"/models", ListLLMProviderModels)
 	router.Get(path+"/:id", GetLLMProvider)
 	router.Put(path+"/:id", UpdateLLMProvider)
 	router.Delete(path+"/:id", DeleteLLMProvider)
@@ -45,6 +46,17 @@ func RegisterRoutes(router fiber.Router, path string) {
 	})
 
 	docs.RegisterApi(docs.ApiWrapper{
+		Path:            path + "/models",
+		Method:          http.MethodPost,
+		Name:            "List LLM Provider Models",
+		Description:     "Call an upstream LLM provider using runtime provider details or an existing `llm_provider_id`. When an ID is supplied, any request fields provided in the body override the saved configuration before the models are fetched.",
+		RequestBody:     &docs.ApiRequestBody{Description: "Runtime provider connection settings", Content: new(dto.ListLLMProviderModelsRequest)},
+		Response:        &docs.ApiResponse{Description: "LLM provider models fetched successfully", Content: new(dto.ListLLMProviderModelsResponse)},
+		Tags:            routeTags,
+		UnAuthenticated: true,
+	})
+
+	docs.RegisterApi(docs.ApiWrapper{
 		Path:            path + "/:id",
 		Method:          http.MethodGet,
 		Name:            "Get LLM Provider",
@@ -54,7 +66,6 @@ func RegisterRoutes(router fiber.Router, path string) {
 		Tags:            routeTags,
 		UnAuthenticated: true,
 	})
-
 	docs.RegisterApi(docs.ApiWrapper{
 		Path:            path + "/:id",
 		Method:          http.MethodPut,

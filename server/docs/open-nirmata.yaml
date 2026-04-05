@@ -12,7 +12,7 @@ info:
 
 
         ![Open Nirmata Logo](/open-nirmata.png)
-    title: Anvitra Shilp APIs
+    title: Open Nirmata APIs
     version: 1.0.0
 openapi: 3.0.3
 paths:
@@ -727,6 +727,76 @@ paths:
                                 type: object
                     description: LLM provider updated successfully
             summary: Update LLM Provider
+            tags:
+                - llm-providers
+    /llm-providers/models:
+        post:
+            description: Call an upstream LLM provider using runtime provider details or an existing `llm_provider_id`. When an ID is supplied, any request fields provided in the body override the saved configuration before the models are fetched.
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                api_key:
+                                    type: string
+                                base_url:
+                                    type: string
+                                llm_provider_id:
+                                    type: string
+                                organization:
+                                    type: string
+                                project_id:
+                                    type: string
+                                provider:
+                                    type: string
+                                timeout_seconds:
+                                    nullable: true
+                                    type: integer
+                            type: object
+                description: Runtime provider connection settings
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    count:
+                                        type: integer
+                                    data:
+                                        items:
+                                            properties:
+                                                capabilities:
+                                                    items:
+                                                        type: string
+                                                    type: array
+                                                context_window:
+                                                    type: integer
+                                                description:
+                                                    type: string
+                                                id:
+                                                    type: string
+                                                input_token_limit:
+                                                    type: integer
+                                                name:
+                                                    type: string
+                                                output_token_limit:
+                                                    type: integer
+                                                owned_by:
+                                                    type: string
+                                                provider:
+                                                    type: string
+                                                raw:
+                                                    additionalProperties: {}
+                                                    type: object
+                                            type: object
+                                        type: array
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: LLM provider models fetched successfully
+            summary: List LLM Provider Models
             tags:
                 - llm-providers
     /tools:

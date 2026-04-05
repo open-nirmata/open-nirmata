@@ -49,16 +49,13 @@ export function AppSidebar() {
             <div className="space-y-6">
                 <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                        <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                            <Sparkles className="size-5" />
+                        <div className="flex size-10 items-center justify-center rounded-xl">
+                            <img src="/open-nirmata.png" alt="Open Nirmata" className="size-5" />
                         </div>
                         <div>
                             <p className="text-sm font-semibold">Open Nirmata</p>
                             <p className="text-xs text-muted-foreground">Agent Builder Console</p>
                         </div>
-                    </div>
-                    <div className="rounded-xl border bg-muted/50 p-3 text-xs text-muted-foreground">
-                        Tools, knowledge bases, and LLM providers are live now.
                     </div>
                 </div>
 
