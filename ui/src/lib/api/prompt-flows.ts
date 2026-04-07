@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api/client";
 import type {
+    PromptFlowCopyPayload,
     PromptFlowListResponse,
     PromptFlowPayload,
     PromptFlowResponse,
@@ -49,6 +50,13 @@ export async function updatePromptFlow(id: string, payload: PromptFlowPayload) {
 export async function deletePromptFlow(id: string) {
     return apiFetch<PromptFlowResponse>(`/prompt-flows/${id}`, {
         method: "DELETE",
+    });
+}
+
+export async function copyPromptFlow(id: string, payload: PromptFlowCopyPayload = {}) {
+    return apiFetch<PromptFlowResponse>(`/prompt-flows/${id}/copy`, {
+        method: "POST",
+        body: JSON.stringify(payload),
     });
 }
 

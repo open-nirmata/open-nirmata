@@ -266,7 +266,6 @@ func (s *ToolExecutorService) executeHTTPTool(ctx context.Context, req *ToolExec
 			return "", fmt.Errorf("failed to render payload template: %w", err)
 		}
 		body = bytes.NewReader([]byte(payload))
-		fmt.Println(payload)
 	} else if len(req.Arguments) > 0 && (method == "POST" || method == "PUT" || method == "PATCH") {
 		// If no template but has arguments, send as JSON
 		payloadBytes, err := json.Marshal(req.Arguments)

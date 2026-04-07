@@ -2674,6 +2674,151 @@ paths:
             summary: Update Prompt Flow
             tags:
                 - prompt-flows
+    /prompt-flows/{id}/copy:
+        post:
+            description: Create a new prompt flow by duplicating an existing flow and optionally overriding its name or description.
+            parameters:
+                - description: Prompt flow ID
+                  in: path
+                  name: id
+                  required: true
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                description:
+                                    nullable: true
+                                    type: string
+                                name:
+                                    nullable: true
+                                    type: string
+                            type: object
+                description: Optional copy overrides
+            responses:
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    data:
+                                        nullable: true
+                                        properties:
+                                            created_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                            defaults:
+                                                nullable: true
+                                                properties:
+                                                    knowledgebase_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                    llm_provider_id:
+                                                        type: string
+                                                    metadata:
+                                                        additionalProperties: {}
+                                                        type: object
+                                                    model:
+                                                        type: string
+                                                    system_prompt:
+                                                        type: string
+                                                    temperature:
+                                                        format: double
+                                                        nullable: true
+                                                        type: number
+                                                    tool_ids:
+                                                        items:
+                                                            type: string
+                                                        type: array
+                                                type: object
+                                            description:
+                                                type: string
+                                            enabled:
+                                                type: boolean
+                                            entry_stage_id:
+                                                type: string
+                                            id:
+                                                type: string
+                                            include_conversation_history:
+                                                nullable: true
+                                                type: boolean
+                                            name:
+                                                type: string
+                                            stages:
+                                                items:
+                                                    properties:
+                                                        config:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        description:
+                                                            type: string
+                                                        enabled:
+                                                            nullable: true
+                                                            type: boolean
+                                                        id:
+                                                            type: string
+                                                        name:
+                                                            type: string
+                                                        on_success:
+                                                            type: string
+                                                        overrides:
+                                                            nullable: true
+                                                            properties:
+                                                                knowledgebase_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                                llm_provider_id:
+                                                                    type: string
+                                                                metadata:
+                                                                    additionalProperties: {}
+                                                                    type: object
+                                                                model:
+                                                                    type: string
+                                                                system_prompt:
+                                                                    type: string
+                                                                temperature:
+                                                                    format: double
+                                                                    nullable: true
+                                                                    type: number
+                                                                tool_ids:
+                                                                    items:
+                                                                        type: string
+                                                                    type: array
+                                                            type: object
+                                                        prompt:
+                                                            type: string
+                                                        transitions:
+                                                            items:
+                                                                properties:
+                                                                    condition:
+                                                                        type: string
+                                                                    label:
+                                                                        type: string
+                                                                    target_stage_id:
+                                                                        type: string
+                                                                type: object
+                                                            type: array
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: array
+                                            updated_at:
+                                                format: date-time
+                                                nullable: true
+                                                type: string
+                                        type: object
+                                    message:
+                                        type: string
+                                    success:
+                                        type: boolean
+                                type: object
+                    description: Prompt flow copied successfully
+            summary: Copy Prompt Flow
+            tags:
+                - prompt-flows
     /prompt-flows/validate:
         post:
             description: Validate a prompt flow definition, including stage graph integrity and referenced llm providers, tools, and knowledgebases. This endpoint does not execute prompts or tools.

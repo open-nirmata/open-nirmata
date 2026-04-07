@@ -35,14 +35,18 @@ type PromptFlowTableProps = {
     items: PromptFlow[];
     isLoading?: boolean;
     error?: string | null;
+    onCopy?: (flow: PromptFlow) => void;
     onDelete?: (flow: PromptFlow) => void;
+    isActionPending?: boolean;
 };
 
 export function PromptFlowTable({
     items,
     isLoading = false,
     error,
+    onCopy,
     onDelete,
+    isActionPending = false,
 }: PromptFlowTableProps) {
     if (isLoading) {
         return (
@@ -153,6 +157,16 @@ export function PromptFlowTable({
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
+                                        {onCopy && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onCopy(flow)}
+                                                disabled={isActionPending}
+                                            >
+                                                Copy
+                                            </Button>
+                                        )}
                                         <Link
                                             href={`/prompt-flows/${flow.id}`}
                                             className={cn(
@@ -166,6 +180,7 @@ export function PromptFlowTable({
                                                 variant="destructive"
                                                 size="sm"
                                                 onClick={() => onDelete(flow)}
+                                                disabled={isActionPending}
                                             >
                                                 Delete
                                             </Button>

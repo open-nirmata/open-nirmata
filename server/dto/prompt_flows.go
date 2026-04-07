@@ -71,6 +71,11 @@ type CreatePromptFlowRequest struct {
 	Stages                     []PromptFlowStage    `json:"stages"`
 }
 
+type CopyPromptFlowRequest struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
 type UpdatePromptFlowRequest struct {
 	Name                       *string              `json:"name,omitempty"`
 	Description                *string              `json:"description,omitempty"`

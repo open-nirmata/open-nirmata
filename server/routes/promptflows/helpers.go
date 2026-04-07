@@ -227,6 +227,53 @@ func clonePromptFlowResources(resources *models.PromptFlowResources) *models.Pro
 	return cloned
 }
 
+func clonePromptFlowStages(stages []models.PromptFlowStage) []models.PromptFlowStage {
+	if stages == nil {
+		return nil
+	}
+	if len(stages) == 0 {
+		return []models.PromptFlowStage{}
+	}
+
+	cloned := make([]models.PromptFlowStage, 0, len(stages))
+	for _, stage := range stages {
+		transitions := make([]models.PromptFlowTransition, len(stage.Transitions))
+		copy(transitions, stage.Transitions)
+
+		cloned = append(cloned, models.PromptFlowStage{
+			Id:          strings.TrimSpace(stage.Id),
+			Name:        strings.TrimSpace(stage.Name),
+			Type:        stage.Type,
+			Description: strings.TrimSpace(stage.Description),
+			Prompt:      strings.TrimSpace(stage.Prompt),
+			Enabled:     stage.Enabled,
+			Overrides:   clonePromptFlowResources(stage.Overrides),
+			Config:      normalizeLooseMap(stage.Config),
+			Transitions: transitions,
+			OnSuccess:   strings.TrimSpace(stage.OnSuccess),
+		})
+	}
+
+	return cloned
+}
+
+func clonePromptFlow(flow models.PromptFlow) models.PromptFlow {
+	return models.PromptFlow{
+		Id:                         strings.TrimSpace(flow.Id),
+		Name:                       strings.TrimSpace(flow.Name),
+		Description:                strings.TrimSpace(flow.Description),
+		Enabled:                    flow.Enabled,
+		IncludeConversationHistory: cloneBoolPtr(flow.IncludeConversationHistory),
+		Defaults:                   clonePromptFlowResources(flow.Defaults),
+		EntryStageID:               strings.TrimSpace(flow.EntryStageID),
+		Stages:                     clonePromptFlowStages(flow.Stages),
+		CreatedAt:                  flow.CreatedAt,
+		CreatedBy:                  strings.TrimSpace(flow.CreatedBy),
+		UpdatedAt:                  flow.UpdatedAt,
+		UpdatedBy:                  strings.TrimSpace(flow.UpdatedBy),
+	}
+}
+
 func isEmptyPromptFlowResources(resources *models.PromptFlowResources) bool {
 	if resources == nil {
 		return true

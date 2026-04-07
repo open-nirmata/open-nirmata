@@ -2,10 +2,12 @@ package promptflows
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"open-nirmata/db"
 	"open-nirmata/db/models"
 	"open-nirmata/dto"
 	"open-nirmata/providers"
@@ -178,6 +180,87 @@ func CreatePromptFlow(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(dto.PromptFlowResponse{Success: true, Data: &item, Message: "prompt flow created successfully"})
 }
 
+func CopyPromptFlow(c *fiber.Ctx) error {
+	var req dto.CopyPromptFlowRequest
+	if len(c.Body()) > 0 {
+		if err := c.BodyParser(&req); err != nil {
+			return badRequest(c, "invalid request body")
+		}
+	}
+
+	source, err := loadPromptFlowByID(c)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return notFound(c, "prompt flow not found")
+		}
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			if fiberErr.Code >= fiber.StatusInternalServerError {
+				return internalError(c, fiberErr.Message)
+			}
+			return badRequest(c, fiberErr.Message)
+		}
+		return internalError(c, "failed to load prompt flow")
+	}
+
+	serviceProvider := providers.GetProviders(c)
+	if serviceProvider == nil || serviceProvider.D == nil {
+		return internalError(c, "database provider is not configured")
+	}
+
+	database := serviceProvider.D
+	copied := clonePromptFlow(source)
+	copied.Id = uuid.NewString()
+
+	if req.Name != nil {
+		copied.Name = strings.TrimSpace(*req.Name)
+		if copied.Name == "" {
+			return badRequest(c, "name cannot be empty")
+		}
+		if err := ensurePromptFlowNameUnique(c, database, copied.Name); err != nil {
+			if fiberErr, ok := err.(*fiber.Error); ok {
+				return badRequest(c, fiberErr.Message)
+			}
+			return internalError(c, "failed to validate prompt flow uniqueness")
+		}
+	} else {
+		generatedName, err := generatePromptFlowCopyName(c, database, source.Name)
+		if err != nil {
+			return internalError(c, "failed to generate prompt flow copy name")
+		}
+		copied.Name = generatedName
+	}
+
+	if req.Description != nil {
+		copied.Description = strings.TrimSpace(*req.Description)
+	}
+
+	now := time.Now().UTC()
+	copied.CreatedAt = &now
+	copied.CreatedBy = "system"
+	copied.UpdatedAt = &now
+	copied.UpdatedBy = "system"
+
+	validationResult, err := validatePromptFlowRecord(c, copied)
+	if err != nil {
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			if fiberErr.Code >= fiber.StatusInternalServerError {
+				return internalError(c, fiberErr.Message)
+			}
+			return badRequest(c, fiberErr.Message)
+		}
+		return internalError(c, "failed to validate prompt flow")
+	}
+	copied.EntryStageID = validationResult.EntryStageID
+
+	flowModel := models.GetPromptFlowModel()
+	if _, err := database.InsertOne(c.Context(), flowModel, copied); err != nil {
+		return internalError(c, "failed to copy prompt flow")
+	}
+
+	item := toPromptFlowItem(copied)
+	return c.Status(fiber.StatusCreated).JSON(dto.PromptFlowResponse{Success: true, Data: &item, Message: "prompt flow copied successfully"})
+}
+
 func UpdatePromptFlow(c *fiber.Ctx) error {
 	id := strings.TrimSpace(c.Params("id"))
 	if id == "" {
@@ -322,6 +405,46 @@ func DeletePromptFlow(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(dto.PromptFlowResponse{Success: true, Message: "prompt flow deleted successfully"})
+}
+
+func ensurePromptFlowNameUnique(c *fiber.Ctx, database db.DB, name string) error {
+	flowModel := models.GetPromptFlowModel()
+	count, err := database.CountDocuments(c.Context(), flowModel, bson.M{flowModel.NameKey: strings.TrimSpace(name)})
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "prompt flow with the same name already exists")
+	}
+	return nil
+}
+
+func generatePromptFlowCopyName(c *fiber.Ctx, database db.DB, sourceName string) (string, error) {
+	baseName := strings.TrimSpace(sourceName)
+	if baseName == "" {
+		baseName = "Untitled Prompt Flow"
+	}
+
+	flowModel := models.GetPromptFlowModel()
+	for attempt := 1; attempt <= 1000; attempt++ {
+		candidate := formatPromptFlowCopyName(baseName, attempt)
+		count, err := database.CountDocuments(c.Context(), flowModel, bson.M{flowModel.NameKey: candidate})
+		if err != nil {
+			return "", err
+		}
+		if count == 0 {
+			return candidate, nil
+		}
+	}
+
+	return "", errors.New("unable to allocate a unique name for the copied prompt flow")
+}
+
+func formatPromptFlowCopyName(baseName string, attempt int) string {
+	if attempt <= 1 {
+		return fmt.Sprintf("%s Copy", baseName)
+	}
+	return fmt.Sprintf("%s Copy %d", baseName, attempt)
 }
 
 func findPromptFlowByID(c *fiber.Ctx) (dto.PromptFlowItem, error) {

@@ -1,16 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { PromptFlowTable } from "@/components/prompt-flows/prompt-flow-table";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
     Card,
-    CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
@@ -23,8 +23,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { deletePromptFlow, listPromptFlows } from "@/lib/api/prompt-flows";
-import type { PromptFlow } from "@/lib/types";
+import { copyPromptFlow, deletePromptFlow, listPromptFlows } from "@/lib/api/prompt-flows";
+import type { PromptFlow, PromptFlowCopyPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 function getErrorMessage(error: unknown) {
@@ -32,6 +32,7 @@ function getErrorMessage(error: unknown) {
 }
 
 export default function PromptFlowsPage() {
+    const router = useRouter();
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
     const [enabledFilter, setEnabledFilter] = useState<"all" | "true" | "false">("all");
@@ -44,6 +45,22 @@ export default function PromptFlowsPage() {
                 enabled: enabledFilter === "all" ? undefined : enabledFilter,
             });
             return response.data;
+        },
+    });
+
+    const copyMutation = useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload?: PromptFlowCopyPayload }) =>
+            copyPromptFlow(id, payload),
+        onSuccess: async (response) => {
+            toast.success(response.message || "Prompt flow copied successfully.");
+            await queryClient.invalidateQueries({ queryKey: ["prompt-flows"] });
+
+            if (response.data?.id) {
+                router.push(`/prompt-flows/${response.data.id}`);
+            }
+        },
+        onError: (error) => {
+            toast.error(getErrorMessage(error));
         },
     });
 
@@ -64,6 +81,23 @@ export default function PromptFlowsPage() {
         total: flows.length,
         enabled: flows.filter((f) => f.enabled).length,
         stages: flows.reduce((sum, f) => sum + (f.stages?.length ?? 0), 0),
+    };
+
+    const handleCopy = async (flow: PromptFlow) => {
+        const suggestedName = flow.name?.trim() ? `${flow.name} (Copy)` : "Copied flow";
+        const name = window.prompt("Name for the copied prompt flow:", suggestedName);
+
+        if (name === null) {
+            return;
+        }
+
+        await copyMutation.mutateAsync({
+            id: flow.id,
+            payload: {
+                name: name.trim() || undefined,
+                description: flow.description?.trim() || undefined,
+            },
+        });
     };
 
     const handleDelete = async (flow: PromptFlow) => {
@@ -140,7 +174,9 @@ export default function PromptFlowsPage() {
                 items={flows}
                 isLoading={flowsQuery.isLoading}
                 error={flowsQuery.isError ? getErrorMessage(flowsQuery.error) : null}
+                onCopy={handleCopy}
                 onDelete={handleDelete}
+                isActionPending={copyMutation.isPending || deleteMutation.isPending}
             />
         </div>
     );

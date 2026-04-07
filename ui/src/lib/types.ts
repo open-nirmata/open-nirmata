@@ -419,6 +419,11 @@ export interface PromptFlowUpdatePayload {
     stages?: PromptFlowStage[];
 }
 
+export interface PromptFlowCopyPayload {
+    name?: string;
+    description?: string;
+}
+
 export interface PromptFlowListResponse {
     success: boolean;
     data: PromptFlow[];

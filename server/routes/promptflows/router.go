@@ -15,6 +15,7 @@ func RegisterRoutes(router fiber.Router, path string) {
 	router.Get(path, ListPromptFlows)
 	router.Post(path, CreatePromptFlow)
 	router.Post(path+"/validate", ValidatePromptFlow)
+	router.Post(path+"/:id/copy", CopyPromptFlow)
 	router.Get(path+"/:id", GetPromptFlow)
 	router.Put(path+"/:id", UpdatePromptFlow)
 	router.Delete(path+"/:id", DeletePromptFlow)
@@ -51,6 +52,18 @@ func RegisterRoutes(router fiber.Router, path string) {
 		Description:     "Validate a prompt flow definition, including stage graph integrity and referenced llm providers, tools, and knowledgebases. This endpoint does not execute prompts or tools.",
 		RequestBody:     &docs.ApiRequestBody{Description: "Prompt flow to validate", Content: new(dto.ValidatePromptFlowRequest)},
 		Response:        &docs.ApiResponse{Description: "Prompt flow validated successfully", Content: new(dto.PromptFlowValidateResponse)},
+		Tags:            routeTags,
+		UnAuthenticated: true,
+	})
+
+	docs.RegisterApi(docs.ApiWrapper{
+		Path:            path + "/:id/copy",
+		Method:          http.MethodPost,
+		Name:            "Copy Prompt Flow",
+		Description:     "Create a new prompt flow by duplicating an existing flow and optionally overriding its name or description.",
+		RequestBody:     &docs.ApiRequestBody{Description: "Optional copy overrides", Content: new(dto.CopyPromptFlowRequest)},
+		Response:        &docs.ApiResponse{Description: "Prompt flow copied successfully", Content: new(dto.PromptFlowResponse)},
+		Parameters:      []docs.ApiParameter{{Name: "id", In: "path", Description: "Prompt flow ID", Required: true}},
 		Tags:            routeTags,
 		UnAuthenticated: true,
 	})
