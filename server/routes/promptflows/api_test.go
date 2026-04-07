@@ -100,6 +100,10 @@ func (f *fakePromptFlowDB) Disconnect(ctx context.Context) error {
 	return nil
 }
 
+func (f *fakePromptFlowDB) GetCollection(collectionName string) *mongo.Collection {
+	return nil
+}
+
 func TestValidatePromptFlowSuccess(t *testing.T) {
 	database := &fakePromptFlowDB{
 		llmProviders: map[string]models.LLMProvider{
@@ -127,8 +131,8 @@ func TestValidatePromptFlowSuccess(t *testing.T) {
 		},
 		"stages":[
 			{"id":"triage","name":"Triage","type":"router","transitions":[{"label":"billing","target_stage_id":"billing"},{"label":"product","target_stage_id":"product"}]},
-			{"id":"billing","name":"Billing","type":"chat","prompt":"Help with billing","overrides":{"tool_ids":[]}},
-			{"id":"product","name":"Product","type":"retrieval"}
+			{"id":"billing","name":"Billing","type":"llm","prompt":"Help with billing","overrides":{"tool_ids":[]},"on_success":"product"},
+			{"id":"product","name":"Product","type":"result"}
 		]
 	}`
 
@@ -201,7 +205,7 @@ func TestCreatePromptFlowSuccess(t *testing.T) {
 	app.Use(providers.Handle(&providers.Provider{D: database}))
 	app.Post("/prompt-flows", CreatePromptFlow)
 
-	request := httptest.NewRequest(http.MethodPost, "/prompt-flows", strings.NewReader(`{"name":"Support Flow","defaults":{"llm_provider_id":"provider-1","model":"gpt-4.1"},"stages":[{"id":"start","name":"Start","type":"chat","prompt":"Be helpful"}]}`))
+	request := httptest.NewRequest(http.MethodPost, "/prompt-flows", strings.NewReader(`{"name":"Support Flow","include_conversation_history":false,"defaults":{"llm_provider_id":"provider-1","model":"gpt-4.1"},"stages":[{"id":"start","name":"Start","type":"llm","prompt":"Be helpful","on_success":"done"},{"id":"done","name":"Done","type":"result"}]}`))
 	request.Header.Set("Content-Type", "application/json")
 
 	response, err := app.Test(request, -1)
@@ -224,7 +228,13 @@ func TestCreatePromptFlowSuccess(t *testing.T) {
 	if payload.Data.EntryStageID != "start" {
 		t.Fatalf("expected entry_stage_id to default to first stage, got %q", payload.Data.EntryStageID)
 	}
+	if payload.Data.IncludeConversationHistory == nil || *payload.Data.IncludeConversationHistory {
+		t.Fatalf("expected include_conversation_history=false in response, got %#v", payload.Data.IncludeConversationHistory)
+	}
 	if database.insertedFlow.Name != "Support Flow" {
 		t.Fatalf("expected flow to be inserted, got %#v", database.insertedFlow)
+	}
+	if database.insertedFlow.IncludeConversationHistory == nil || *database.insertedFlow.IncludeConversationHistory {
+		t.Fatalf("expected include_conversation_history=false to be stored, got %#v", database.insertedFlow.IncludeConversationHistory)
 	}
 }

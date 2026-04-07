@@ -93,12 +93,13 @@ func ValidatePromptFlow(c *fiber.Ctx) error {
 	}
 
 	flow := models.PromptFlow{
-		Name:         strings.TrimSpace(req.Name),
-		Description:  strings.TrimSpace(req.Description),
-		Enabled:      enabled,
-		Defaults:     toModelPromptFlowResources(req.Defaults),
-		EntryStageID: strings.TrimSpace(req.EntryStageID),
-		Stages:       toModelPromptFlowStages(req.Stages),
+		Name:                       strings.TrimSpace(req.Name),
+		Description:                strings.TrimSpace(req.Description),
+		Enabled:                    enabled,
+		IncludeConversationHistory: cloneBoolPtr(req.IncludeConversationHistory),
+		Defaults:                   toModelPromptFlowResources(req.Defaults),
+		EntryStageID:               strings.TrimSpace(req.EntryStageID),
+		Stages:                     toModelPromptFlowStages(req.Stages),
 	}
 
 	result, err := validatePromptFlowRecord(c, flow)
@@ -133,17 +134,18 @@ func CreatePromptFlow(c *fiber.Ctx) error {
 
 	now := time.Now().UTC()
 	flow := models.PromptFlow{
-		Id:           uuid.NewString(),
-		Name:         strings.TrimSpace(req.Name),
-		Description:  strings.TrimSpace(req.Description),
-		Enabled:      enabled,
-		Defaults:     toModelPromptFlowResources(req.Defaults),
-		EntryStageID: strings.TrimSpace(req.EntryStageID),
-		Stages:       toModelPromptFlowStages(req.Stages),
-		CreatedAt:    &now,
-		CreatedBy:    "system",
-		UpdatedAt:    &now,
-		UpdatedBy:    "system",
+		Id:                         uuid.NewString(),
+		Name:                       strings.TrimSpace(req.Name),
+		Description:                strings.TrimSpace(req.Description),
+		Enabled:                    enabled,
+		IncludeConversationHistory: cloneBoolPtr(req.IncludeConversationHistory),
+		Defaults:                   toModelPromptFlowResources(req.Defaults),
+		EntryStageID:               strings.TrimSpace(req.EntryStageID),
+		Stages:                     toModelPromptFlowStages(req.Stages),
+		CreatedAt:                  &now,
+		CreatedBy:                  "system",
+		UpdatedAt:                  &now,
+		UpdatedBy:                  "system",
 	}
 
 	validationResult, err := validatePromptFlowRecord(c, flow)
@@ -219,6 +221,10 @@ func UpdatePromptFlow(c *fiber.Ctx) error {
 		updated.Enabled = *req.Enabled
 		changed = true
 	}
+	if req.IncludeConversationHistory != nil {
+		updated.IncludeConversationHistory = cloneBoolPtr(req.IncludeConversationHistory)
+		changed = true
+	}
 	if req.Defaults != nil {
 		updated.Defaults = toModelPromptFlowResources(req.Defaults)
 		changed = true
@@ -268,14 +274,15 @@ func UpdatePromptFlow(c *fiber.Ctx) error {
 
 	now := time.Now().UTC()
 	updateFields := bson.M{
-		flowModel.NameKey:         updated.Name,
-		flowModel.DescriptionKey:  updated.Description,
-		flowModel.EnabledKey:      updated.Enabled,
-		flowModel.DefaultsKey:     updated.Defaults,
-		flowModel.EntryStageIDKey: updated.EntryStageID,
-		flowModel.StagesKey:       updated.Stages,
-		flowModel.UpdatedAtKey:    &now,
-		flowModel.UpdatedByKey:    "system",
+		flowModel.NameKey:                       updated.Name,
+		flowModel.DescriptionKey:                updated.Description,
+		flowModel.EnabledKey:                    updated.Enabled,
+		flowModel.IncludeConversationHistoryKey: updated.IncludeConversationHistory,
+		flowModel.DefaultsKey:                   updated.Defaults,
+		flowModel.EntryStageIDKey:               updated.EntryStageID,
+		flowModel.StagesKey:                     updated.Stages,
+		flowModel.UpdatedAtKey:                  &now,
+		flowModel.UpdatedByKey:                  "system",
 	}
 
 	result, err := database.UpdateOne(c.Context(), flowModel, bson.M{flowModel.IdKey: id}, bson.M{"$set": updateFields})

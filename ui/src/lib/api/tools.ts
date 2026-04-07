@@ -52,6 +52,12 @@ export async function updateTool(id: string, payload: Partial<ToolPayload>) {
     });
 }
 
+export async function refreshTool(id: string) {
+    return apiFetch<ToolResponse>(`/tools/${id}/refresh`, {
+        method: "POST",
+    });
+}
+
 export async function testMCPTool(payload: TestMCPToolPayload) {
     return apiFetch<TestMCPToolResponse>("/tools/test", {
         method: "POST",

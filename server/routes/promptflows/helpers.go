@@ -14,13 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var supportedPromptFlowStageTypes = map[string]string{
-	"chat":      string(dto.PromptFlowStageTypeChat),
-	"tool":      string(dto.PromptFlowStageTypeTool),
-	"retrieval": string(dto.PromptFlowStageTypeRetrieval),
-	"router":    string(dto.PromptFlowStageTypeRouter),
-}
-
 func toPromptFlowItem(flow models.PromptFlow) dto.PromptFlowItem {
 	responseStages := make([]dto.PromptFlowStage, 0, len(flow.Stages))
 	for _, stage := range flow.Stages {
@@ -28,15 +21,16 @@ func toPromptFlowItem(flow models.PromptFlow) dto.PromptFlowItem {
 	}
 
 	return dto.PromptFlowItem{
-		Id:           flow.Id,
-		Name:         flow.Name,
-		Description:  flow.Description,
-		Enabled:      flow.Enabled,
-		Defaults:     toPromptFlowResources(flow.Defaults),
-		EntryStageID: flow.EntryStageID,
-		Stages:       responseStages,
-		CreatedAt:    flow.CreatedAt,
-		UpdatedAt:    flow.UpdatedAt,
+		Id:                         flow.Id,
+		Name:                       flow.Name,
+		Description:                flow.Description,
+		Enabled:                    flow.Enabled,
+		IncludeConversationHistory: cloneBoolPtr(flow.IncludeConversationHistory),
+		Defaults:                   toPromptFlowResources(flow.Defaults),
+		EntryStageID:               flow.EntryStageID,
+		Stages:                     responseStages,
+		CreatedAt:                  flow.CreatedAt,
+		UpdatedAt:                  flow.UpdatedAt,
 	}
 }
 
@@ -61,6 +55,7 @@ func toPromptFlowStageItem(stage models.PromptFlowStage) dto.PromptFlowStage {
 		Overrides:   toPromptFlowResources(stage.Overrides),
 		Config:      normalizeLooseMap(stage.Config),
 		Transitions: responseTransitions,
+		OnSuccess:   stage.OnSuccess,
 	}
 }
 
@@ -117,10 +112,6 @@ func toModelPromptFlowStages(stages []dto.PromptFlowStage) []models.PromptFlowSt
 
 	normalized := make([]models.PromptFlowStage, 0, len(stages))
 	for _, stage := range stages {
-		stageType, ok := normalizePromptFlowStageType(stage.Type)
-		if !ok {
-			stageType = strings.TrimSpace(stage.Type)
-		}
 		enabled := true
 		if stage.Enabled != nil {
 			enabled = *stage.Enabled
@@ -138,23 +129,18 @@ func toModelPromptFlowStages(stages []dto.PromptFlowStage) []models.PromptFlowSt
 		normalized = append(normalized, models.PromptFlowStage{
 			Id:          strings.TrimSpace(stage.Id),
 			Name:        strings.TrimSpace(stage.Name),
-			Type:        stageType,
+			Type:        stage.Type,
 			Description: strings.TrimSpace(stage.Description),
 			Prompt:      strings.TrimSpace(stage.Prompt),
 			Enabled:     enabled,
 			Overrides:   toModelPromptFlowResources(stage.Overrides),
 			Config:      normalizeLooseMap(stage.Config),
 			Transitions: transitions,
+			OnSuccess:   strings.TrimSpace(stage.OnSuccess),
 		})
 	}
 
 	return normalized
-}
-
-func normalizePromptFlowStageType(stageType string) (string, bool) {
-	normalizedKey := strings.NewReplacer(" ", "", "-", "", "_", "").Replace(strings.ToLower(strings.TrimSpace(stageType)))
-	normalizedType, ok := supportedPromptFlowStageTypes[normalizedKey]
-	return normalizedType, ok
 }
 
 func normalizeLooseMap(input map[string]interface{}) map[string]interface{} {
@@ -212,6 +198,14 @@ func cloneStringList(input []string) []string {
 	cloned := make([]string, len(input))
 	copy(cloned, input)
 	return cloned
+}
+
+func cloneBoolPtr(value *bool) *bool {
+	if value == nil {
+		return nil
+	}
+	cloned := *value
+	return &cloned
 }
 
 func clonePromptFlowResources(resources *models.PromptFlowResources) *models.PromptFlowResources {
@@ -304,11 +298,12 @@ func validatePromptFlowRecord(c *fiber.Ctx, flow models.PromptFlow) (*dto.Prompt
 		if strings.TrimSpace(stage.Name) == "" {
 			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("stages[%d].name is required", index))
 		}
-		normalizedType, ok := normalizePromptFlowStageType(stage.Type)
-		if !ok {
-			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("stages[%d].type must be one of: chat, tool, retrieval, router", index))
+		if !stage.Type.IsValid() {
+			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("stages[%d].type must be one of: llm, tool, retrieval, router, user_input, result", index))
 		}
-		stage.Type = normalizedType
+		if stage.Type.ShouldHaveOnSuccessTransition() && len(stage.OnSuccess) == 0 {
+			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("stages[%d] of type %q must specify on_success transition", index, stage.Type))
+		}
 		if _, exists := stageIDs[stage.Id]; exists {
 			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("duplicate stage id %q", stage.Id))
 		}
@@ -324,7 +319,7 @@ func validatePromptFlowRecord(c *fiber.Ctx, flow models.PromptFlow) (*dto.Prompt
 	}
 
 	for stageIndex, stage := range flow.Stages {
-		if stage.Type == string(dto.PromptFlowStageTypeRouter) && len(stage.Transitions) == 0 {
+		if stage.Type == dto.PromptFlowStageTypeRouter && len(stage.Transitions) == 0 {
 			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("stages[%d].transitions must contain at least one target for router stages", stageIndex))
 		}
 		for transitionIndex, transition := range stage.Transitions {

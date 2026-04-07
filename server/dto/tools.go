@@ -31,11 +31,15 @@ type ToolConfig struct {
 	TimeoutSeconds  *int              `json:"timeout_seconds,omitempty" bson:"timeout_seconds,omitempty"`
 
 	// MCP tool fields.
-	Transport string            `json:"transport,omitempty" bson:"transport,omitempty"`
-	Command   string            `json:"command,omitempty" bson:"command,omitempty"`
-	Args      []string          `json:"args,omitempty" bson:"args,omitempty"`
-	Env       map[string]string `json:"env,omitempty" bson:"env,omitempty"`
-	ServerURL string            `json:"server_url,omitempty" bson:"server_url,omitempty"`
+	Transport       string                 `json:"transport,omitempty" bson:"transport,omitempty"`
+	Command         string                 `json:"command,omitempty" bson:"command,omitempty"`
+	Args            []string               `json:"args,omitempty" bson:"args,omitempty"`
+	Env             map[string]string      `json:"env,omitempty" bson:"env,omitempty"`
+	ServerURL       string                 `json:"server_url,omitempty" bson:"server_url,omitempty"`
+	InputSchema     map[string]interface{} `json:"input_schema,omitempty" bson:"input_schema,omitempty"`
+	Annotations     map[string]interface{} `json:"annotations,omitempty" bson:"annotations,omitempty"`
+	ServerInfo      *MCPServerInfo         `json:"server_info,omitempty" bson:"server_info,omitempty"`
+	LastRefreshedAt *time.Time             `json:"last_refreshed_at,omitempty" bson:"last_refreshed_at,omitempty"`
 }
 
 type CreateToolRequest struct {
@@ -58,6 +62,10 @@ type UpdateToolRequest struct {
 	Tags        *[]string               `json:"tags,omitempty"`
 	Config      *ToolConfig             `json:"config,omitempty"`
 	Auth        *map[string]interface{} `json:"auth,omitempty"`
+}
+
+type RefreshToolRequest struct {
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
 type ToolItem struct {

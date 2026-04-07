@@ -88,6 +88,10 @@ func (f *fakeDB) Disconnect(ctx context.Context) error {
 	return nil
 }
 
+func (f *fakeDB) GetCollection(collectionName string) *mongo.Collection {
+	return nil
+}
+
 func TestListLLMProviderModelsSuccess(t *testing.T) {
 	service := &fakeLLMModelsService{result: []dto.LLMModelItem{{
 		ID:            "gpt-4.1",

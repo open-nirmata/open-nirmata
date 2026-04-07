@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2, RefreshCcw } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -13,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { deleteTool, getTool, updateTool } from "@/lib/api/tools";
+import { deleteTool, getTool, refreshTool, updateTool } from "@/lib/api/tools";
 import type { ToolPayload } from "@/lib/types";
 
 function getErrorMessage(error: unknown) {
@@ -41,6 +42,20 @@ export default function ToolDetailPage() {
         mutationFn: (payload: Partial<ToolPayload>) => updateTool(id, payload),
         onSuccess: async (response) => {
             toast.success(response.message || "Tool updated successfully.");
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ["tools"] }),
+                queryClient.invalidateQueries({ queryKey: ["tool", id] }),
+            ]);
+        },
+        onError: (error) => {
+            toast.error(getErrorMessage(error));
+        },
+    });
+
+    const refreshMutation = useMutation({
+        mutationFn: () => refreshTool(id),
+        onSuccess: async (response) => {
+            toast.success(response.message || "Tool refreshed successfully.");
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: ["tools"] }),
                 queryClient.invalidateQueries({ queryKey: ["tool", id] }),
@@ -106,14 +121,36 @@ export default function ToolDetailPage() {
                                 Type: {tool.type} • Auth configured: {tool.auth_configured ? "yes" : "no"}
                             </CardDescription>
                         </div>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={handleDelete}
-                            disabled={deleteMutation.isPending}
-                        >
-                            {deleteMutation.isPending ? "Deleting…" : "Delete tool"}
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    refreshMutation.mutate();
+                                }}
+                                disabled={refreshMutation.isPending || deleteMutation.isPending}
+                            >
+                                {refreshMutation.isPending ? (
+                                    <>
+                                        <Loader2 className="mr-1 size-4 animate-spin" />
+                                        Refreshing…
+                                    </>
+                                ) : (
+                                    <>
+                                        <RefreshCcw className="mr-1 size-4" />
+                                        Refresh tool
+                                    </>
+                                )}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={handleDelete}
+                                disabled={deleteMutation.isPending || refreshMutation.isPending}
+                            >
+                                {deleteMutation.isPending ? "Deleting…" : "Delete tool"}
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent className="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
@@ -129,7 +166,7 @@ export default function ToolDetailPage() {
             <ToolForm
                 mode="edit"
                 initialValue={tool}
-                isPending={updateMutation.isPending}
+                isPending={updateMutation.isPending || refreshMutation.isPending}
                 onSubmit={async (payload) => {
                     await updateMutation.mutateAsync(payload);
                 }}

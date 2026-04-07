@@ -57,6 +57,9 @@ type DbQuerier interface {
 
 	// UpdateMany updates multiple documents in the collection
 	UpdateMany(ctx context.Context, col DbCollection, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
+
+	// GetCollection returns the underlying MongoDB collection for advanced operations
+	GetCollection(collectionName string) *mongo.Collection
 }
 
 // DbClient defines the interface for database client operations.
@@ -267,4 +270,19 @@ func (m *MongoConnection) BulkWrite(ctx context.Context, col DbCollection, model
 // Returns UpdateResult containing information about the update operation and an error if it fails.
 func (m *MongoConnection) UpdateMany(ctx context.Context, col DbCollection, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	return m.client.Database(col.DbName()).Collection(col.Name()).UpdateMany(ctx, filter, update, opts...)
+}
+
+// GetCollection returns the underlying MongoDB collection for advanced operations.
+// This method is primarily used for operations like creating indexes that aren't
+// abstracted in the DB interface.
+//
+// Parameters:
+//   - collectionName: Name of the collection to retrieve
+//
+// Returns the MongoDB collection instance.
+func (m *MongoConnection) GetCollection(collectionName string) *mongo.Collection {
+	// Use the default database name from the first DbCollection we encounter
+	// For now, we'll use a hardcoded database name - this could be improved
+	// by storing the database name in MongoConnection
+	return m.client.Database("open_nirmata").Collection(collectionName)
 }

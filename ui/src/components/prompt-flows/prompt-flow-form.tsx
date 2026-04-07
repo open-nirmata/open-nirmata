@@ -91,6 +91,7 @@ const stageSchema = z.object({
     ov_knowledgebase_ids: z.boolean(),
     ov_knowledgebase_ids_value: z.array(z.string()),
     transitions: z.array(transitionSchema),
+    on_success: z.string().optional(),
 });
 
 const flowSchema = z
@@ -98,6 +99,7 @@ const flowSchema = z
         name: z.string().trim().min(1, "Flow name is required."),
         description: z.string(),
         enabled: z.boolean(),
+        include_conversation_history: z.boolean(),
         entry_stage_id: z.string(),
         def_llm_provider_id: z.string(),
         def_model: z.string(),
@@ -214,6 +216,7 @@ function buildPayload(values: FlowFormValues): PromptFlowPayload {
         name: values.name.trim(),
         description: trimOrUndefined(values.description),
         enabled: values.enabled,
+        include_conversation_history: values.include_conversation_history,
         defaults,
         entry_stage_id: trimOrUndefined(values.entry_stage_id),
         stages: values.stages.map((stage): PromptFlowStage => ({
@@ -224,6 +227,7 @@ function buildPayload(values: FlowFormValues): PromptFlowPayload {
             prompt: trimOrUndefined(stage.prompt),
             enabled: stage.enabled,
             overrides: buildStageOverrides(stage),
+            on_success: stage.on_success && stage.type !== "router" && stage.type !== "result" ? trimOrUndefined(stage.on_success) : undefined,
             transitions:
                 stage.transitions.length > 0
                     ? stage.transitions.map((t) => ({
@@ -242,6 +246,7 @@ function flowToFormValues(flow: PromptFlow): FlowFormValues {
         name: flow.name,
         description: flow.description ?? "",
         enabled: flow.enabled,
+        include_conversation_history: flow.include_conversation_history ?? false,
         entry_stage_id: flow.entry_stage_id ?? "",
         def_llm_provider_id: d.llm_provider_id ?? "",
         def_model: d.model ?? "",
@@ -256,6 +261,7 @@ function flowToFormValues(flow: PromptFlow): FlowFormValues {
                 name: stage.name,
                 type: stage.type,
                 enabled: stage.enabled !== false,
+                on_success: stage.on_success && stage.type !== "router" && stage.type !== "result" ? trimOrUndefined(stage.on_success) : undefined,
                 description: stage.description ?? "",
                 prompt: stage.prompt ?? "",
                 ov_llm_provider: ov.llm_provider_id !== undefined,
@@ -283,7 +289,7 @@ function flowToFormValues(flow: PromptFlow): FlowFormValues {
 const defaultStageFormValues = (): StageFormValues => ({
     id: "",
     name: "",
-    type: "chat",
+    type: "llm",
     enabled: true,
     description: "",
     prompt: "",
@@ -306,6 +312,7 @@ const defaultFormValues = (): FlowFormValues => ({
     name: "",
     description: "",
     enabled: true,
+    include_conversation_history: false,
     entry_stage_id: "",
     def_llm_provider_id: "",
     def_model: "",
@@ -545,6 +552,7 @@ function StageCard({
     const stageEnabled = useWatch({ control, name: `stages.${index}.enabled` });
     const stageName = useWatch({ control, name: `stages.${index}.name` });
     const stageId = useWatch({ control, name: `stages.${index}.id` });
+    const onSuccess = useWatch({ control, name: `stages.${index}.on_success` });
 
     const defaultLLMProviderId = useWatch({ control, name: "def_llm_provider_id" });
     const ovLLMProvider = useWatch({ control, name: `stages.${index}.ov_llm_provider` });
@@ -649,10 +657,11 @@ function StageCard({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="chat">Chat</SelectItem>
+                                            <SelectItem value="llm">LLM</SelectItem>
+                                            <SelectItem value="router">Router</SelectItem>
                                             <SelectItem value="tool">Tool</SelectItem>
                                             <SelectItem value="retrieval">Retrieval</SelectItem>
-                                            <SelectItem value="router">Router</SelectItem>
+                                            <SelectItem value="result">Result</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 )}
@@ -944,13 +953,11 @@ function StageCard({
                     </div>
 
                     {/* Transitions */}
-                    <div className="space-y-3">
+                    {stageType == "router" && <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <Label>
                                 Transitions
-                                {stageType === "router" && (
-                                    <span className="ml-1 text-destructive">*</span>
-                                )}
+                                <span className="ml-1 text-destructive">*</span>
                             </Label>
                             <Button
                                 type="button"
@@ -1047,7 +1054,52 @@ function StageCard({
                                 </div>
                             );
                         })}
-                    </div>
+                    </div>}
+
+                    {stageType != "router" && stageType != "result" && <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Label>
+                                On Success
+                                {stageType === "router" && (
+                                    <span className="ml-1 text-destructive">*</span>
+                                )}
+                            </Label>
+                        </div>
+                        {(errors.stages?.[index] as { on_success?: { message?: string } })?.on_success?.message && (
+                            <p className="text-xs text-destructive">
+                                {(errors.stages?.[index] as { on_success?: { message?: string } }).on_success!.message}
+                            </p>
+                        )}
+                        <div className="space-y-1">
+                            <Label className="text-xs">
+                                Target Stage <span className="text-destructive">*</span>
+                            </Label>
+                            <Controller
+                                control={control}
+                                name={`stages.${index}.on_success`}
+                                render={({ field }) => (
+                                    <Select value={field.value} onValueChange={field.onChange}>
+                                        <SelectTrigger
+                                            className={cn(
+                                                "w-full",
+                                                (errors.stages?.[index] as { on_success?: { message?: string } })?.on_success?.message &&
+                                                "border-destructive",
+                                            )}
+                                        >
+                                            <SelectValue placeholder="Select stage" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {allStageIds.filter(Boolean).map((sid) => (
+                                                <SelectItem key={sid} value={sid}>
+                                                    {sid}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                        </div>
+                    </div>}
                 </div>
             )}
         </div>
@@ -1131,6 +1183,7 @@ export function PromptFlowForm({
     const defToolIds = watch("def_tool_ids");
     const defKnowledgebaseIds = watch("def_knowledgebase_ids");
     const enabled = watch("enabled");
+    const includeConversationHistory = watch("include_conversation_history");
 
     const toggleStageExpand = (i: number) => {
         setExpandedStages((prev) => {
@@ -1280,20 +1333,42 @@ export function PromptFlowForm({
                                     <p className="text-xs text-destructive">{errors.name.message}</p>
                                 )}
                             </div>
-                            <div className="flex items-center gap-3 pt-6">
-                                <Controller
-                                    control={control}
-                                    name="enabled"
-                                    render={({ field }) => (
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
-                                    )}
-                                />
-                                <Label>
-                                    {enabled ? "Enabled" : "Disabled"}
-                                </Label>
+                            <div className="space-y-3 pt-1 sm:pt-6">
+                                <div className="flex items-center gap-3">
+                                    <Controller
+                                        control={control}
+                                        name="enabled"
+                                        render={({ field }) => (
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        )}
+                                    />
+                                    <Label>
+                                        {enabled ? "Enabled" : "Disabled"}
+                                    </Label>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Controller
+                                        control={control}
+                                        name="include_conversation_history"
+                                        render={({ field }) => (
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        )}
+                                    />
+                                    <div>
+                                        <Label>Include conversation history</Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            {includeConversationHistory
+                                                ? "Previous messages will be included during execution."
+                                                : "Only the current request will be sent by default."}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

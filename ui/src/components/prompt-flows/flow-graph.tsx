@@ -252,6 +252,39 @@ export function FlowGraph({ stages, entryStageId, onStageClick, className }: Flo
                     });
                 }
             });
+            if (stage.on_success && stageIds.has(stage.on_success)) {
+                // Create edge for on_success if target stage exists
+                edgeList.push({
+                    id: `${stage.id}-${stage.on_success}-success`,
+                    source: stage.id,
+                    target: stage.on_success,
+                    label: "on_success",
+                    animated: true,
+                    type: 'smoothstep',
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        width: 20,
+                        height: 20,
+                        color: '#10b981',
+                    },
+                    style: {
+                        stroke: '#10b981',
+                        strokeWidth: 2,
+                        strokeDasharray: '5,5',
+                    },
+                    labelStyle: {
+                        fontSize: 11,
+                        fill: '#065f46',
+                        fontWeight: 500,
+                    },
+                    labelBgStyle: {
+                        fill: '#d1fae5',
+                        fillOpacity: 0.9,
+                    },
+                    labelBgPadding: [6, 3] as [number, number],
+                    labelBgBorderRadius: 4,
+                });
+            }
         });
         setEdges(edgeList);
     }, [stages, setEdges]);

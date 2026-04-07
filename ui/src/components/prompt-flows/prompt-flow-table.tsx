@@ -64,7 +64,7 @@ export function PromptFlowTable({
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle>Couldn't load prompt flows</CardTitle>
+                    <CardTitle>Could not load prompt flows</CardTitle>
                     <CardDescription>{error}</CardDescription>
                 </CardHeader>
             </Card>
@@ -108,6 +108,7 @@ export function PromptFlowTable({
                             <TableHead>Status</TableHead>
                             <TableHead>Stages</TableHead>
                             <TableHead>Entry stage</TableHead>
+                            <TableHead>History</TableHead>
                             <TableHead>Updated</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -141,6 +142,11 @@ export function PromptFlowTable({
                                     ) : (
                                         <span className="text-xs text-muted-foreground">—</span>
                                     )}
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={flow.include_conversation_history ? "default" : "outline"}>
+                                        {flow.include_conversation_history ? "Included" : "Off"}
+                                    </Badge>
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                                     {formatDate(flow.updated_at)}

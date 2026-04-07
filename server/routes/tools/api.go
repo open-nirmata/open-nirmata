@@ -186,6 +186,12 @@ func CreateTool(c *fiber.Ctx) error {
 		return internalError(c, "failed to validate tool")
 	}
 
+	if tool.Type == string(dto.ToolTypeMCP) {
+		if err := refreshMCPToolMetadata(c, &tool, nil); err != nil {
+			return handleMCPRefreshError(c, err)
+		}
+	}
+
 	database := providers.GetProviders(c).D
 	toolModel := models.GetToolModel()
 	if _, err := database.InsertOne(c.Context(), toolModel, tool); err != nil {
@@ -280,24 +286,19 @@ func UpdateTool(c *fiber.Ctx) error {
 		return internalError(c, "failed to validate tool")
 	}
 
+	if updated.Type == string(dto.ToolTypeMCP) {
+		if err := refreshMCPToolMetadata(c, &updated, nil); err != nil {
+			return handleMCPRefreshError(c, err)
+		}
+	}
+
 	now := time.Now().UTC()
 	updated.UpdatedAt = &now
 	updated.UpdatedBy = "system"
 
 	database := providers.GetProviders(c).D
 	toolModel := models.GetToolModel()
-	updateFields := bson.M{
-		toolModel.NameKey:        updated.Name,
-		toolModel.TypeKey:        updated.Type,
-		toolModel.ProviderKey:    updated.Provider,
-		toolModel.DescriptionKey: updated.Description,
-		toolModel.EnabledKey:     updated.Enabled,
-		toolModel.TagsKey:        updated.Tags,
-		toolModel.ConfigKey:      updated.Config,
-		toolModel.AuthKey:        updated.Auth,
-		toolModel.UpdatedAtKey:   updated.UpdatedAt,
-		toolModel.UpdatedByKey:   updated.UpdatedBy,
-	}
+	updateFields := buildToolUpdateFields(updated)
 
 	result, err := database.UpdateOne(c.Context(), toolModel, bson.M{toolModel.IdKey: id}, bson.M{"$set": updateFields})
 	if err != nil {
@@ -309,6 +310,51 @@ func UpdateTool(c *fiber.Ctx) error {
 
 	item := toToolItem(updated)
 	return c.JSON(dto.ToolResponse{Success: true, Data: &item, Message: "tool updated successfully"})
+}
+
+func RefreshTool(c *fiber.Ctx) error {
+	var req dto.RefreshToolRequest
+	if len(c.Body()) > 0 {
+		if err := c.BodyParser(&req); err != nil {
+			return badRequest(c, "invalid request body")
+		}
+	}
+
+	existing, err := loadToolByID(c)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return notFound(c, "tool not found")
+		}
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			return badRequest(c, fiberErr.Message)
+		}
+		return internalError(c, "failed to load tool")
+	}
+
+	if existing.Type != string(dto.ToolTypeMCP) {
+		return badRequest(c, "refresh is only supported for mcp tools")
+	}
+
+	if err := refreshMCPToolMetadata(c, &existing, req.TimeoutSeconds); err != nil {
+		return handleMCPRefreshError(c, err)
+	}
+
+	now := time.Now().UTC()
+	existing.UpdatedAt = &now
+	existing.UpdatedBy = "system"
+
+	database := providers.GetProviders(c).D
+	toolModel := models.GetToolModel()
+	result, err := database.UpdateOne(c.Context(), toolModel, bson.M{toolModel.IdKey: existing.Id}, bson.M{"$set": buildToolUpdateFields(existing)})
+	if err != nil {
+		return internalError(c, "failed to refresh tool")
+	}
+	if result.MatchedCount == 0 {
+		return notFound(c, "tool not found")
+	}
+
+	item := toToolItem(existing)
+	return c.JSON(dto.ToolResponse{Success: true, Data: &item, Message: "mcp tool refreshed successfully"})
 }
 
 func DeleteTool(c *fiber.Ctx) error {
@@ -353,4 +399,35 @@ func findToolByID(c *fiber.Ctx) (dto.ToolItem, error) {
 		return dto.ToolItem{}, err
 	}
 	return toToolItem(tool), nil
+}
+
+func buildToolUpdateFields(tool models.Tool) bson.M {
+	toolModel := models.GetToolModel()
+	return bson.M{
+		toolModel.NameKey:        tool.Name,
+		toolModel.TypeKey:        tool.Type,
+		toolModel.ProviderKey:    tool.Provider,
+		toolModel.DescriptionKey: tool.Description,
+		toolModel.EnabledKey:     tool.Enabled,
+		toolModel.ToolsKey:       tool.Tools,
+		toolModel.TagsKey:        tool.Tags,
+		toolModel.ConfigKey:      tool.Config,
+		toolModel.AuthKey:        tool.Auth,
+		toolModel.UpdatedAtKey:   tool.UpdatedAt,
+		toolModel.UpdatedByKey:   tool.UpdatedBy,
+	}
+}
+
+func handleMCPRefreshError(c *fiber.Ctx, err error) error {
+	if fiberErr, ok := err.(*fiber.Error); ok {
+		switch fiberErr.Code {
+		case fiber.StatusNotFound:
+			return notFound(c, fiberErr.Message)
+		case fiber.StatusBadRequest:
+			return badRequest(c, fiberErr.Message)
+		default:
+			return c.Status(fiberErr.Code).JSON(dto.ErrorResponse{Success: false, Message: fiberErr.Message})
+		}
+	}
+	return badGateway(c, "failed to fetch tools from mcp server: "+err.Error())
 }

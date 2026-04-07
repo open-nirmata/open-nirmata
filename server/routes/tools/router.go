@@ -17,6 +17,7 @@ func RegisterRoutes(router fiber.Router, path string) {
 	router.Post(path+"/test", TestMCPTool)
 	router.Get(path+"/:id", GetTool)
 	router.Put(path+"/:id", UpdateTool)
+	router.Post(path+"/:id/refresh", RefreshTool)
 	router.Delete(path+"/:id", DeleteTool)
 
 	docs.RegisterApi(docs.ApiWrapper{
@@ -75,6 +76,18 @@ func RegisterRoutes(router fiber.Router, path string) {
 		Description:     "Update a tool definition by ID. HTTP tools require `config.url` and `config.method`; MCP tools accept stdio (`command`, `args`, `env`) or remote (`server_url`, optional headers/auth) configuration.",
 		RequestBody:     &docs.ApiRequestBody{Description: "Tool fields to update", Content: new(dto.UpdateToolRequest)},
 		Response:        &docs.ApiResponse{Description: "Tool updated successfully", Content: new(dto.ToolResponse)},
+		Parameters:      []docs.ApiParameter{{Name: "id", In: "path", Description: "Tool ID", Required: true}},
+		Tags:            routeTags,
+		UnAuthenticated: true,
+	})
+
+	docs.RegisterApi(docs.ApiWrapper{
+		Path:            path + "/:id/refresh",
+		Method:          http.MethodPost,
+		Name:            "Refresh MCP Tool",
+		Description:     "Reconnect to the configured MCP server for this tool, fetch the latest schema and metadata for the matching tool name, and persist the refreshed details on the existing tool record.",
+		RequestBody:     &docs.ApiRequestBody{Description: "Optional timeout override for the refresh operation", Content: new(dto.RefreshToolRequest)},
+		Response:        &docs.ApiResponse{Description: "MCP tool refreshed successfully", Content: new(dto.ToolResponse)},
 		Parameters:      []docs.ApiParameter{{Name: "id", In: "path", Description: "Tool ID", Required: true}},
 		Tags:            routeTags,
 		UnAuthenticated: true,

@@ -6,6 +6,7 @@ import (
 
 	"open-nirmata/db/models"
 	"open-nirmata/dto"
+	"open-nirmata/providers"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -176,21 +177,46 @@ func normalizeToolConfig(config *dto.ToolConfig) *dto.ToolConfig {
 		Args:            normalizeStringList(config.Args),
 		Env:             normalizeStringMap(config.Env),
 		ServerURL:       strings.TrimSpace(config.ServerURL),
+		InputSchema:     normalizeLooseMap(config.InputSchema),
+		Annotations:     normalizeLooseMap(config.Annotations),
+		ServerInfo:      normalizeMCPServerInfo(config.ServerInfo),
 	}
 
 	if config.TimeoutSeconds != nil {
 		timeout := *config.TimeoutSeconds
 		normalized.TimeoutSeconds = &timeout
 	}
+	if config.LastRefreshedAt != nil {
+		lastRefreshed := config.LastRefreshedAt.UTC()
+		normalized.LastRefreshedAt = &lastRefreshed
+	}
 
 	if normalized.URL == "" && normalized.Method == "" && normalized.PayloadTemplate == "" &&
 		len(normalized.Headers) == 0 && len(normalized.QueryParams) == 0 && normalized.TimeoutSeconds == nil &&
 		normalized.Transport == "" && normalized.Command == "" && len(normalized.Args) == 0 &&
-		len(normalized.Env) == 0 && normalized.ServerURL == "" {
+		len(normalized.Env) == 0 && normalized.ServerURL == "" && len(normalized.InputSchema) == 0 &&
+		len(normalized.Annotations) == 0 && normalized.ServerInfo == nil && normalized.LastRefreshedAt == nil {
 		return nil
 	}
 
 	return normalized
+}
+
+func normalizeMCPServerInfo(info *dto.MCPServerInfo) *dto.MCPServerInfo {
+	if info == nil {
+		return nil
+	}
+
+	name := strings.TrimSpace(info.Name)
+	version := strings.TrimSpace(info.Version)
+	if name == "" && version == "" {
+		return nil
+	}
+
+	return &dto.MCPServerInfo{
+		Name:    name,
+		Version: version,
+	}
 }
 
 func validateToolRecord(tool models.Tool) error {
@@ -281,4 +307,60 @@ func resolveMCPTestTimeout(timeoutSeconds *int) (time.Duration, error) {
 		timeout = *timeoutSeconds
 	}
 	return time.Duration(timeout) * time.Second, nil
+}
+
+func refreshMCPToolMetadata(c *fiber.Ctx, tool *models.Tool, timeoutSeconds *int) error {
+	if tool == nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "tool is required")
+	}
+	if strings.TrimSpace(tool.Type) != string(dto.ToolTypeMCP) {
+		return fiber.NewError(fiber.StatusBadRequest, "refresh is only supported for mcp tools")
+	}
+
+	tool.Config = normalizeToolConfig(tool.Config)
+	if err := validateMCPConfig(tool.Config); err != nil {
+		return err
+	}
+
+	timeout, err := resolveMCPTestTimeout(timeoutSeconds)
+	if err != nil {
+		return err
+	}
+
+	serviceProvider := providers.GetProviders(c)
+	if serviceProvider == nil || serviceProvider.S == nil || serviceProvider.S.MCP == nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "mcp service is not configured")
+	}
+
+	result, err := serviceProvider.S.MCP.ListTools(c.UserContext(), tool.Config, timeout)
+	if err != nil {
+		return err
+	}
+
+	tool.Tools = result.Tools
+	now := time.Now().UTC()
+	tool.Config.LastRefreshedAt = &now
+	tool.Config = normalizeToolConfig(tool.Config)
+
+	return nil
+}
+
+func findMCPDiscoveredTool(tools []dto.MCPDiscoveredTool, toolId string) (*dto.MCPDiscoveredTool, error) {
+	trimmedName := strings.TrimSpace(toolId)
+	if trimmedName == "" {
+		return nil, fiber.NewError(fiber.StatusBadRequest, "name is required for mcp tools")
+	}
+
+	for i := range tools {
+		if strings.TrimSpace(tools[i].Name) == trimmedName {
+			return &tools[i], nil
+		}
+	}
+	for i := range tools {
+		if strings.EqualFold(strings.TrimSpace(tools[i].Name), trimmedName) {
+			return &tools[i], nil
+		}
+	}
+
+	return nil, fiber.NewError(fiber.StatusNotFound, "tool not found on mcp server: "+trimmedName)
 }

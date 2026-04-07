@@ -20,6 +20,18 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
     {
+        href: "/agents",
+        label: "Agents",
+        icon: Sparkles,
+        soon: false,
+    },
+    {
+        href: "/prompt-flows",
+        label: "Prompt Flows",
+        icon: GitFork,
+        soon: false,
+    },
+    {
         href: "/tools",
         label: "Tools",
         icon: Wrench,
@@ -35,12 +47,6 @@ const navItems = [
         href: "/providers",
         label: "LLM Providers",
         icon: BrainCircuit,
-        soon: false,
-    },
-    {
-        href: "/prompt-flows",
-        label: "Prompt Flows",
-        icon: GitFork,
         soon: false,
     },
     {

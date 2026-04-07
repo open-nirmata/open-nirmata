@@ -3,6 +3,7 @@ package routes
 import (
 	"open-nirmata/config"
 	"open-nirmata/providers"
+	"open-nirmata/routes/agents"
 	"open-nirmata/routes/health"
 	"open-nirmata/routes/knowledgebases"
 	"open-nirmata/routes/llmproviders"
@@ -19,4 +20,5 @@ func RegisterRoutes(app fiber.Router, prv *providers.Provider, cnf config.Config
 	knowledgebases.RegisterRoutes(app, "/knowledgebases")
 	llmproviders.RegisterRoutes(app, "/llm-providers")
 	promptflows.RegisterRoutes(app, "/prompt-flows")
+	agents.RegisterRoutes(app, "/agents")
 }
