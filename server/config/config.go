@@ -64,7 +64,7 @@ func NewConfig() *Config {
 		},
 		Deployment: DeploymentConfig{
 			Environment: "development",
-			Name:        "shilp-server",
+			Name:        "open-nirmata",
 		},
 		DB: DB{
 			host: os.Getenv("DB_HOST"),

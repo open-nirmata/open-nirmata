@@ -4,6 +4,32 @@ import (
 	"time"
 )
 
+// VariableMappingType defines how a variable should be mapped
+type VariableMappingType string
+
+const (
+	VariableMappingTypeDirect   VariableMappingType = "direct"   // Copy value directly
+	VariableMappingTypeLLM      VariableMappingType = "llm"      // Prompt handles variable usage
+	VariableMappingTypeTemplate VariableMappingType = "template" // Use Go template rendering
+)
+
+// VariableMapping defines how an input variable should be populated
+type VariableMapping struct {
+	Source      string                 `json:"source"`                // e.g., "system.usermessage", "stage1.output"
+	Type        VariableMappingType    `json:"type,omitempty"`        // direct, llm, template (default: direct)
+	Default     interface{}            `json:"default,omitempty"`     // default value if source not found
+	Description string                 `json:"description,omitempty"` // human-readable description
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`    // additional metadata
+}
+
+// VariableDefinition defines an output variable from a stage
+type VariableDefinition struct {
+	Description string                 `json:"description,omitempty"` // what this variable contains
+	Type        string                 `json:"type,omitempty"`        // string, object, array, etc.
+	Source      string                 `json:"source,omitempty"`      // how to extract (e.g., "response", "tool_result", "variables.key")
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`    // additional metadata
+}
+
 type PromptFlowStageType string
 
 const (
@@ -49,16 +75,18 @@ type PromptFlowTransition struct {
 }
 
 type PromptFlowStage struct {
-	Id          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Type        PromptFlowStageType    `json:"type"`
-	Description string                 `json:"description,omitempty"`
-	Prompt      string                 `json:"prompt,omitempty"`
-	Enabled     *bool                  `json:"enabled,omitempty"`
-	Overrides   *PromptFlowResources   `json:"overrides,omitempty"`
-	Config      map[string]interface{} `json:"config,omitempty"`
-	Transitions []PromptFlowTransition `json:"transitions,omitempty"`
-	OnSuccess   string                 `json:"on_success,omitempty"`
+	Id          string                        `json:"id"`
+	Name        string                        `json:"name"`
+	Type        PromptFlowStageType           `json:"type"`
+	Description string                        `json:"description,omitempty"`
+	Prompt      string                        `json:"prompt,omitempty"`
+	Enabled     *bool                         `json:"enabled,omitempty"`
+	Overrides   *PromptFlowResources          `json:"overrides,omitempty"`
+	Config      map[string]interface{}        `json:"config,omitempty"`
+	Inputs      map[string]VariableMapping    `json:"inputs,omitempty"`      // Input variable mappings
+	Outputs     map[string]VariableDefinition `json:"outputs,omitempty"`     // Output variable definitions
+	Transitions []PromptFlowTransition        `json:"transitions,omitempty"`
+	OnSuccess   string                        `json:"on_success,omitempty"`
 }
 
 type CreatePromptFlowRequest struct {

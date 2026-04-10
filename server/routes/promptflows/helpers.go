@@ -45,6 +45,29 @@ func toPromptFlowStageItem(stage models.PromptFlowStage) dto.PromptFlowStage {
 		})
 	}
 
+	// Convert inputs
+	inputs := make(map[string]dto.VariableMapping)
+	for k, v := range stage.Inputs {
+		inputs[k] = dto.VariableMapping{
+			Source:      v.Source,
+			Type:        dto.VariableMappingType(v.Type),
+			Default:     v.Default,
+			Description: v.Description,
+			Metadata:    v.Metadata,
+		}
+	}
+
+	// Convert outputs
+	outputs := make(map[string]dto.VariableDefinition)
+	for k, v := range stage.Outputs {
+		outputs[k] = dto.VariableDefinition{
+			Description: v.Description,
+			Type:        v.Type,
+			Source:      v.Source,
+			Metadata:    v.Metadata,
+		}
+	}
+
 	return dto.PromptFlowStage{
 		Id:          stage.Id,
 		Name:        stage.Name,
@@ -54,6 +77,8 @@ func toPromptFlowStageItem(stage models.PromptFlowStage) dto.PromptFlowStage {
 		Enabled:     &enabled,
 		Overrides:   toPromptFlowResources(stage.Overrides),
 		Config:      normalizeLooseMap(stage.Config),
+		Inputs:      inputs,
+		Outputs:     outputs,
 		Transitions: responseTransitions,
 		OnSuccess:   stage.OnSuccess,
 	}
@@ -126,6 +151,29 @@ func toModelPromptFlowStages(stages []dto.PromptFlowStage) []models.PromptFlowSt
 			})
 		}
 
+		// Convert inputs
+		inputs := make(map[string]models.VariableMapping)
+		for k, v := range stage.Inputs {
+			inputs[k] = models.VariableMapping{
+				Source:      strings.TrimSpace(v.Source),
+				Type:        models.VariableMappingType(v.Type),
+				Default:     v.Default,
+				Description: strings.TrimSpace(v.Description),
+				Metadata:    v.Metadata,
+			}
+		}
+
+		// Convert outputs
+		outputs := make(map[string]models.VariableDefinition)
+		for k, v := range stage.Outputs {
+			outputs[k] = models.VariableDefinition{
+				Description: strings.TrimSpace(v.Description),
+				Type:        strings.TrimSpace(v.Type),
+				Source:      strings.TrimSpace(v.Source),
+				Metadata:    v.Metadata,
+			}
+		}
+
 		normalized = append(normalized, models.PromptFlowStage{
 			Id:          strings.TrimSpace(stage.Id),
 			Name:        strings.TrimSpace(stage.Name),
@@ -135,6 +183,8 @@ func toModelPromptFlowStages(stages []dto.PromptFlowStage) []models.PromptFlowSt
 			Enabled:     enabled,
 			Overrides:   toModelPromptFlowResources(stage.Overrides),
 			Config:      normalizeLooseMap(stage.Config),
+			Inputs:      inputs,
+			Outputs:     outputs,
 			Transitions: transitions,
 			OnSuccess:   strings.TrimSpace(stage.OnSuccess),
 		})
@@ -380,6 +430,24 @@ func validatePromptFlowRecord(c *fiber.Ctx, flow models.PromptFlow) (*dto.Prompt
 	}
 
 	warnings := make([]string, 0)
+	
+	// Validate variable mappings
+	dtoStages := make([]dto.PromptFlowStage, len(flow.Stages))
+	for i, stage := range flow.Stages {
+		dtoStages[i] = toPromptFlowStageItem(stage)
+	}
+	
+	mappingErrors := validateVariableMappings(dtoStages)
+	if len(mappingErrors) > 0 {
+		return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("variable mapping validation failed: %s", strings.Join(mappingErrors, "; ")))
+	}
+	
+	outputErrors := validateOutputDefinitions(dtoStages)
+	if len(outputErrors) > 0 {
+		// Output validation errors are warnings, not failures
+		warnings = append(warnings, outputErrors...)
+	}
+	
 	defaultWarnings, err := validatePromptFlowResources(c, flow.Defaults, "defaults")
 	if err != nil {
 		return nil, err
@@ -515,4 +583,117 @@ func notFound(c *fiber.Ctx, message string) error {
 
 func internalError(c *fiber.Ctx, message string) error {
 	return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Success: false, Message: message})
+}
+
+// validateVariableMappings validates that all variable mappings reference valid sources
+func validateVariableMappings(stages []dto.PromptFlowStage) []string {
+	var errors []string
+	stageIDs := make(map[string]bool)
+
+	// Build stage ID map
+	for _, stage := range stages {
+		stageIDs[stage.Id] = true
+	}
+
+	// Validate each stage's inputs
+	for _, stage := range stages {
+		if len(stage.Inputs) == 0 {
+			continue
+		}
+
+		for inputName, mapping := range stage.Inputs {
+			// Validate source format
+			if mapping.Source == "" {
+				errors = append(errors, fmt.Sprintf("stage %q input %q has empty source", stage.Id, inputName))
+				continue
+			}
+
+			// Parse source (e.g., "system.usermessage", "stage1.output")
+			parts := strings.SplitN(mapping.Source, ".", 2)
+			if len(parts) == 0 {
+				errors = append(errors, fmt.Sprintf("stage %q input %q has invalid source format: %q", stage.Id, inputName, mapping.Source))
+				continue
+			}
+
+			// Validate system variables
+			if parts[0] == "system" {
+				if len(parts) < 2 {
+					errors = append(errors, fmt.Sprintf("stage %q input %q has invalid system variable source: %q", stage.Id, inputName, mapping.Source))
+					continue
+				}
+				// Check if it's a valid system variable
+				validSystemVars := map[string]bool{
+					"usermessage":             true,
+					"conversation_history":    true,
+					"last_assistant_message": true,
+				}
+				if !validSystemVars[parts[1]] {
+					errors = append(errors, fmt.Sprintf("stage %q input %q references unknown system variable: %q (valid: usermessage, conversation_history, last_assistant_message)", stage.Id, inputName, parts[1]))
+				}
+			} else if len(parts) == 2 {
+				// Validate stage reference
+				if !stageIDs[parts[0]] {
+					errors = append(errors, fmt.Sprintf("stage %q input %q references non-existent stage: %q", stage.Id, inputName, parts[0]))
+				}
+			}
+
+			// Validate mapping type
+			if mapping.Type != "" && mapping.Type != dto.VariableMappingTypeDirect && mapping.Type != dto.VariableMappingTypeLLM && mapping.Type != dto.VariableMappingTypeTemplate {
+				errors = append(errors, fmt.Sprintf("stage %q input %q has invalid mapping type: %q (valid: direct, llm, template)", stage.Id, inputName, mapping.Type))
+			}
+		}
+	}
+
+	return errors
+}
+
+// validateOutputDefinitions validates that output definitions have valid sources
+func validateOutputDefinitions(stages []dto.PromptFlowStage) []string {
+	var errors []string
+
+	for _, stage := range stages {
+		if len(stage.Outputs) == 0 {
+			continue
+		}
+
+		for outputName, outputDef := range stage.Outputs {
+			// Source is optional - if empty, the entire result is used
+			if outputDef.Source == "" {
+				continue
+			}
+
+			// Validate source based on stage type
+			validSourcesForType := getValidOutputSources(stage.Type)
+			if len(validSourcesForType) > 0 {
+				validSource := false
+				for _, valid := range validSourcesForType {
+					if strings.HasPrefix(outputDef.Source, valid) {
+						validSource = true
+						break
+					}
+				}
+				if !validSource {
+					errors = append(errors, fmt.Sprintf("stage %q (%s) output %q has invalid source: %q (valid sources for this stage type: %v)", stage.Id, stage.Type, outputName, outputDef.Source, validSourcesForType))
+				}
+			}
+		}
+	}
+
+	return errors
+}
+
+// getValidOutputSources returns valid output sources for a stage type
+func getValidOutputSources(stageType dto.PromptFlowStageType) []string {
+	switch stageType {
+	case dto.PromptFlowStageTypeLLM, dto.PromptFlowStageTypeResult:
+		return []string{"response", "variables."}
+	case dto.PromptFlowStageTypeTool:
+		return []string{"tool_result"}
+	case dto.PromptFlowStageTypeRetrieval:
+		return []string{"retrieved_docs", "top_result", "num_results"}
+	case dto.PromptFlowStageTypeRouter:
+		return []string{"selected_stage", "routing_reason"}
+	default:
+		return []string{}
+	}
 }

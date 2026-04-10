@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"text/template"
 	"time"
 
 	"open-nirmata/db"
@@ -203,6 +204,13 @@ func (s *PromptFlowExecutorService) executeStage(ctx context.Context, execCtx *E
 
 // executeLLMStage executes a chat stage with LLM
 func (s *PromptFlowExecutorService) executeLLMStage(ctx context.Context, execCtx *ExecutionContext, stage *models.PromptFlowStage, step *models.ExecutionStep) (string, error) {
+	// Resolve input variables
+	resolvedInputs, err := resolveStageInputs(stage, execCtx)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve inputs: %w", err)
+	}
+	step.InputVariables = resolvedInputs
+
 	// Resolve resources (merge defaults with overrides)
 	resources := s.mergeResources(execCtx.Flow.Defaults, stage.Overrides)
 
@@ -221,13 +229,19 @@ func (s *PromptFlowExecutorService) executeLLMStage(ctx context.Context, execCtx
 		}
 	}
 
-	// Build system prompt
+	// Build system prompt with variable rendering
 	systemPrompt := resources.SystemPrompt
 	if stage.Prompt != "" {
+		// Render stage prompt with resolved variables
+		renderedPrompt, err := renderTemplate(stage.Prompt, resolvedInputs)
+		if err != nil {
+			return "", fmt.Errorf("failed to render stage prompt: %w", err)
+		}
+		
 		if systemPrompt != "" {
-			systemPrompt += "\n\n" + stage.Prompt
+			systemPrompt += "\n\n" + renderedPrompt
 		} else {
-			systemPrompt = stage.Prompt
+			systemPrompt = renderedPrompt
 		}
 	}
 	systemPrompt += "\n\n" + s.getResponseFormatPrompt(tools)
@@ -302,6 +316,7 @@ func (s *PromptFlowExecutorService) executeLLMStage(ctx context.Context, execCtx
 		if len(response.ToolCalls) == 0 {
 			// No tool calls, we're done
 			step.OutputMessage = s.convertToExecutionMessage(assistantMsg)
+			llmResponse = parsedMsg
 			break
 		}
 
@@ -365,8 +380,27 @@ func (s *PromptFlowExecutorService) executeLLMStage(ctx context.Context, execCtx
 		}
 
 		if !hasError {
+			llmResponse = parsedMsg
 			break
 		}
+	}
+
+	// Extract output variables
+	if llmResponse != nil {
+		outputVars := make(map[string]interface{})
+		if err := extractOutputVariables(stage.Id, stage.Outputs, llmResponse, execCtx); err != nil {
+			// Log warning but don't fail - outputs are best-effort
+			fmt.Printf("Warning: failed to extract outputs from stage %s: %v\n", stage.Id, err)
+		}
+		// Also store variables from LLM response directly
+		if llmResponse.Variables != nil {
+			for k, v := range llmResponse.Variables {
+				key := fmt.Sprintf("%s.%s", stage.Id, k)
+				execCtx.Variables[key] = v
+				outputVars[k] = v
+			}
+		}
+		step.OutputVariables = outputVars
 	}
 
 	// Determine next stage
@@ -375,6 +409,13 @@ func (s *PromptFlowExecutorService) executeLLMStage(ctx context.Context, execCtx
 
 // executeResultStage executes a result stage with LLM
 func (s *PromptFlowExecutorService) executeResultStage(ctx context.Context, execCtx *ExecutionContext, stage *models.PromptFlowStage, step *models.ExecutionStep) (string, error) {
+	// Resolve input variables
+	resolvedInputs, err := resolveStageInputs(stage, execCtx)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve inputs: %w", err)
+	}
+	step.InputVariables = resolvedInputs
+
 	// Resolve resources (merge defaults with overrides)
 	resources := s.mergeResources(execCtx.Flow.Defaults, stage.Overrides)
 
@@ -384,13 +425,19 @@ func (s *PromptFlowExecutorService) executeResultStage(ctx context.Context, exec
 		return "", fmt.Errorf("failed to load LLM provider: %w", err)
 	}
 
-	// Build system prompt
+	// Build system prompt with variable rendering
 	systemPrompt := resources.SystemPrompt
 	if stage.Prompt != "" {
+		// Render stage prompt with resolved variables
+		renderedPrompt, err := renderTemplate(stage.Prompt, resolvedInputs)
+		if err != nil {
+			return "", fmt.Errorf("failed to render stage prompt: %w", err)
+		}
+		
 		if systemPrompt != "" {
-			systemPrompt += "\n\n" + stage.Prompt
+			systemPrompt += "\n\n" + renderedPrompt
 		} else {
-			systemPrompt = stage.Prompt
+			systemPrompt = renderedPrompt
 		}
 	}
 
@@ -448,6 +495,13 @@ func (s *PromptFlowExecutorService) executeResultStage(ctx context.Context, exec
 
 // executeToolStage executes a tool stage
 func (s *PromptFlowExecutorService) executeToolStage(ctx context.Context, execCtx *ExecutionContext, stage *models.PromptFlowStage, step *models.ExecutionStep) (string, error) {
+	// Resolve input variables
+	resolvedInputs, err := resolveStageInputs(stage, execCtx)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve inputs: %w", err)
+	}
+	step.InputVariables = resolvedInputs
+
 	// Tool stage executes specific tools defined in config
 	// Config format: { "tool_calls": [{ "tool_name": "name", "arguments": {...} }] }
 
@@ -477,6 +531,7 @@ func (s *PromptFlowExecutorService) executeToolStage(ctx context.Context, execCt
 
 	// Execute each tool call
 	var resultMessages []string
+	toolResults := make(map[string]interface{})
 
 	for i, toolCallRaw := range toolCallsList {
 		toolCallMap, ok := toolCallRaw.(map[string]interface{})
@@ -496,12 +551,29 @@ func (s *PromptFlowExecutorService) executeToolStage(ctx context.Context, execCt
 			arguments = make(map[string]interface{})
 		}
 
+		// Resolve arguments with variables
+		resolvedArgs := make(map[string]interface{})
+		for argKey, argValue := range arguments {
+			// Check if the argument value is a string that references a variable
+			if argStr, ok := argValue.(string); ok {
+				// Try to render as template with resolved inputs
+				rendered, err := renderTemplate(argStr, resolvedInputs)
+				if err == nil && rendered != argStr {
+					resolvedArgs[argKey] = rendered
+				} else {
+					resolvedArgs[argKey] = argValue
+				}
+			} else {
+				resolvedArgs[argKey] = argValue
+			}
+		}
+
 		// Stream callback for tool execution
 		if execCtx.StreamCallback != nil {
 			execCtx.StreamCallback("tool_call", map[string]interface{}{
 				"tool_call_id": fmt.Sprintf("tool-stage-%d", i),
 				"tool_name":    toolName,
-				"arguments":    arguments,
+				"arguments":    resolvedArgs,
 			})
 		}
 
@@ -512,7 +584,7 @@ func (s *PromptFlowExecutorService) executeToolStage(ctx context.Context, execCt
 			Type: "function",
 			Function: ChatToolCallFunction{
 				Name:      toolName,
-				Arguments: arguments,
+				Arguments: resolvedArgs,
 			},
 		}
 
@@ -523,7 +595,7 @@ func (s *PromptFlowExecutorService) executeToolStage(ctx context.Context, execCt
 		execToolCall := models.ExecutionToolCall{
 			ID:        toolID,
 			ToolName:  toolName,
-			Arguments: arguments,
+			Arguments: resolvedArgs,
 			StartedAt: &startTime,
 		}
 		completedTime := time.Now()
@@ -538,6 +610,9 @@ func (s *PromptFlowExecutorService) executeToolStage(ctx context.Context, execCt
 			execToolCall.ToolID = toolResult.ToolID
 			execToolCall.ToolType = toolResult.ToolType
 			resultMessages = append(resultMessages, fmt.Sprintf("%s: %s", toolName, toolResult.Result))
+			
+			// Store tool result for output extraction
+			toolResults[toolName] = toolResult.Result
 		}
 
 		step.ToolCalls = append(step.ToolCalls, execToolCall)
@@ -574,11 +649,32 @@ func (s *PromptFlowExecutorService) executeToolStage(ctx context.Context, execCt
 		step.OutputMessage = s.convertToExecutionMessage(toolResultMsg)
 	}
 
+	// Extract output variables
+	outputVars := make(map[string]interface{})
+	if err := extractOutputVariables(stage.Id, stage.Outputs, toolResults, execCtx); err != nil {
+		// Log warning but don't fail - outputs are best-effort
+		fmt.Printf("Warning: failed to extract outputs from stage %s: %v\n", stage.Id, err)
+	}
+	// Store the combined tool results
+	if len(toolResults) > 0 {
+		for k, v := range toolResults {
+			outputVars[k] = v
+		}
+	}
+	step.OutputVariables = outputVars
+
 	return s.selectNextStage(stage, nil)
 }
 
 // executeRetrievalStage executes a retrieval stage
 func (s *PromptFlowExecutorService) executeRetrievalStage(ctx context.Context, execCtx *ExecutionContext, stage *models.PromptFlowStage, step *models.ExecutionStep) (string, error) {
+	// Resolve input variables
+	resolvedInputs, err := resolveStageInputs(stage, execCtx)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve inputs: %w", err)
+	}
+	step.InputVariables = resolvedInputs
+
 	resources := s.mergeResources(execCtx.Flow.Defaults, stage.Overrides)
 
 	if len(resources.KnowledgebaseIDs) == 0 {
@@ -591,10 +687,27 @@ func (s *PromptFlowExecutorService) executeRetrievalStage(ctx context.Context, e
 		return "", fmt.Errorf("failed to load knowledgebases: %w", err)
 	}
 
-	// Get query from stage prompt or last user message
-	query := stage.Prompt
+	// Get query from inputs, stage prompt, or last user message
+	query := ""
+	
+	// First, check if query is provided in resolved inputs
+	if queryInput, ok := resolvedInputs["query"]; ok {
+		if queryStr, ok := queryInput.(string); ok {
+			query = queryStr
+		}
+	}
+	
+	// Fallback to stage prompt
+	if query == "" && stage.Prompt != "" {
+		// Render stage prompt with resolved variables
+		query, err = renderTemplate(stage.Prompt, resolvedInputs)
+		if err != nil {
+			return "", fmt.Errorf("failed to render query prompt: %w", err)
+		}
+	}
+	
+	// Final fallback: use last user message as query
 	if query == "" {
-		// Use last user message as query
 		for i := len(execCtx.Messages) - 1; i >= 0; i-- {
 			if execCtx.Messages[i].Role == "user" {
 				query = execCtx.Messages[i].Content
@@ -639,11 +752,36 @@ func (s *PromptFlowExecutorService) executeRetrievalStage(ctx context.Context, e
 		step.OutputMessage = s.convertToExecutionMessage(contextMsg)
 	}
 
+	// Extract output variables
+	outputVars := make(map[string]interface{})
+	if len(results) > 0 {
+		// Store retrieved documents and top result
+		var docs []string
+		for _, r := range results {
+			docs = append(docs, r.Content)
+		}
+		outputVars["retrieved_docs"] = docs
+		outputVars["top_result"] = results[0].Content
+		outputVars["num_results"] = len(results)
+	}
+	if err := extractOutputVariables(stage.Id, stage.Outputs, results, execCtx); err != nil {
+		// Log warning but don't fail - outputs are best-effort
+		fmt.Printf("Warning: failed to extract outputs from stage %s: %v\n", stage.Id, err)
+	}
+	step.OutputVariables = outputVars
+
 	return s.selectNextStage(stage, nil)
 }
 
 // executeRouterStage executes a router stage using LLM
 func (s *PromptFlowExecutorService) executeRouterStage(ctx context.Context, execCtx *ExecutionContext, stage *models.PromptFlowStage, step *models.ExecutionStep) (string, error) {
+	// Resolve input variables
+	resolvedInputs, err := resolveStageInputs(stage, execCtx)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve inputs: %w", err)
+	}
+	step.InputVariables = resolvedInputs
+
 	if len(stage.Transitions) == 0 {
 		return "", fmt.Errorf("router stage must have at least one transition")
 	}
@@ -658,8 +796,15 @@ func (s *PromptFlowExecutorService) executeRouterStage(ctx context.Context, exec
 		return stage.Transitions[0].TargetStageID, nil
 	}
 
-	// Build classification prompt
+	// Build classification prompt (render with variables if needed)
 	prompt := s.buildRouterPrompt(stage, execCtx.Messages)
+	if stage.Prompt != "" {
+		// If stage has a custom prompt, render it with variables
+		renderedPrompt, err := renderTemplate(stage.Prompt, resolvedInputs)
+		if err == nil {
+			prompt = renderedPrompt
+		}
+	}
 
 	// Call LLM for classification
 	req := &ChatCompletionRequest{
@@ -687,6 +832,13 @@ func (s *PromptFlowExecutorService) executeRouterStage(ctx context.Context, exec
 	}
 
 	step.TransitionReason = fmt.Sprintf("LLM selected: %s", selectedStageID)
+	
+	// Extract output variables (store the routing decision)
+	outputVars := make(map[string]interface{})
+	outputVars["selected_stage"] = selectedStageID
+	outputVars["routing_reason"] = step.TransitionReason
+	step.OutputVariables = outputVars
+
 	return selectedStageID, nil
 }
 
@@ -1091,6 +1243,176 @@ func extractTemplateVariables(templateStr string) []string {
 	}
 
 	return variables
+}
+
+// resolveSystemVariables returns the system-provided variables
+func resolveSystemVariables(execCtx *ExecutionContext) map[string]interface{} {
+	systemVars := make(map[string]interface{})
+
+	// Extract original user message (first user message in initial messages)
+	for _, msg := range execCtx.Messages {
+		if msg.Role == "user" {
+			systemVars["usermessage"] = msg.Content
+			break
+		}
+	}
+
+	// Full conversation history as JSON string
+	if historyBytes, err := json.Marshal(execCtx.Messages); err == nil {
+		systemVars["conversation_history"] = string(historyBytes)
+	}
+
+	// Last assistant message
+	for i := len(execCtx.Messages) - 1; i >= 0; i-- {
+		if execCtx.Messages[i].Role == "assistant" {
+			systemVars["last_assistant_message"] = execCtx.Messages[i].Content
+			break
+		}
+	}
+
+	return systemVars
+}
+
+// resolveStageInputs resolves all input variable mappings for a stage
+func resolveStageInputs(stage *models.PromptFlowStage, execCtx *ExecutionContext) (map[string]interface{}, error) {
+	if len(stage.Inputs) == 0 {
+		return make(map[string]interface{}), nil
+	}
+
+	resolvedInputs := make(map[string]interface{})
+	systemVars := resolveSystemVariables(execCtx)
+
+	for inputName, mapping := range stage.Inputs {
+		value, err := resolveVariableMapping(mapping, systemVars, execCtx.Variables)
+		if err != nil {
+			// Use default value if provided
+			if mapping.Default != nil {
+				resolvedInputs[inputName] = mapping.Default
+				continue
+			}
+			return nil, fmt.Errorf("failed to resolve input %q: %w", inputName, err)
+		}
+		resolvedInputs[inputName] = value
+	}
+
+	return resolvedInputs, nil
+}
+
+// resolveVariableMapping resolves a single variable mapping
+func resolveVariableMapping(mapping models.VariableMapping, systemVars, stageVars map[string]interface{}) (interface{}, error) {
+	// Parse the source (e.g., "system.usermessage", "stage1.output")
+	parts := strings.SplitN(mapping.Source, ".", 2)
+	if len(parts) == 0 {
+		return nil, fmt.Errorf("invalid source format: %q", mapping.Source)
+	}
+
+	var value interface{}
+	var found bool
+
+	if parts[0] == "system" {
+		// System variable
+		if len(parts) < 2 {
+			return nil, fmt.Errorf("invalid system variable source: %q", mapping.Source)
+		}
+		value, found = systemVars[parts[1]]
+	} else {
+		// Stage variable (format: "stage_id.var_name" or just "var_name" for current scope)
+		if len(parts) == 1 {
+			// Try to find in stage variables directly
+			value, found = stageVars[parts[0]]
+		} else {
+			// Look for stage-scoped variable
+			fullKey := mapping.Source // e.g., "stage1.output"
+			value, found = stageVars[fullKey]
+		}
+	}
+
+	if !found {
+		return nil, fmt.Errorf("variable %q not found", mapping.Source)
+	}
+
+	return value, nil
+}
+
+// renderTemplate renders a Go template with the provided variables
+func renderTemplate(templateStr string, variables map[string]interface{}) (string, error) {
+	if templateStr == "" {
+		return "", nil
+	}
+
+	// Check if template contains any template syntax
+	if !strings.Contains(templateStr, "{{") {
+		return templateStr, nil
+	}
+
+	tmpl, err := template.New("stage").Parse(templateStr)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, variables); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
+// extractOutputVariables extracts output variables from execution results
+func extractOutputVariables(stageID string, outputs map[string]models.VariableDefinition, result interface{}, execCtx *ExecutionContext) error {
+	if len(outputs) == 0 {
+		return nil
+	}
+
+	for varName, varDef := range outputs {
+		value, err := extractOutputValue(result, varDef)
+		if err != nil {
+			// Log warning but continue - outputs are best-effort
+			fmt.Printf("Warning: failed to extract output %q from stage %q: %v\n", varName, stageID, err)
+			continue
+		}
+
+		// Store with stage-scoped key
+		key := fmt.Sprintf("%s.%s", stageID, varName)
+		execCtx.Variables[key] = value
+	}
+
+	return nil
+}
+
+// extractOutputValue extracts a value from result based on variable definition
+func extractOutputValue(result interface{}, varDef models.VariableDefinition) (interface{}, error) {
+	if varDef.Source == "" {
+		// Default: return the entire result
+		return result, nil
+	}
+
+	// Handle different source formats
+	switch varDef.Source {
+	case "response":
+		// For LLM responses
+		if llmResp, ok := result.(*LLMResponse); ok {
+			return llmResp.Response, nil
+		}
+		if strResult, ok := result.(string); ok {
+			return strResult, nil
+		}
+	case "tool_result":
+		// For tool execution results
+		return result, nil
+	default:
+		// Handle path-based extraction (e.g., "variables.key")
+		if strings.HasPrefix(varDef.Source, "variables.") {
+			key := strings.TrimPrefix(varDef.Source, "variables.")
+			if llmResp, ok := result.(*LLMResponse); ok && llmResp.Variables != nil {
+				if value, exists := llmResp.Variables[key]; exists {
+					return value, nil
+				}
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("could not extract value using source %q", varDef.Source)
 }
 
 func normalizeToolParametersSchema(inputSchema map[string]interface{}) map[string]interface{} {

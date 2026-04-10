@@ -1885,10 +1885,39 @@ paths:
                                                                 type: boolean
                                                             id:
                                                                 type: string
+                                                            inputs:
+                                                                additionalProperties:
+                                                                    properties:
+                                                                        default: {}
+                                                                        description:
+                                                                            type: string
+                                                                        metadata:
+                                                                            additionalProperties: {}
+                                                                            type: object
+                                                                        source:
+                                                                            type: string
+                                                                        type:
+                                                                            type: string
+                                                                    type: object
+                                                                type: object
                                                             name:
                                                                 type: string
                                                             on_success:
                                                                 type: string
+                                                            outputs:
+                                                                additionalProperties:
+                                                                    properties:
+                                                                        description:
+                                                                            type: string
+                                                                        metadata:
+                                                                            additionalProperties: {}
+                                                                            type: object
+                                                                        source:
+                                                                            type: string
+                                                                        type:
+                                                                            type: string
+                                                                    type: object
+                                                                type: object
                                                             overrides:
                                                                 nullable: true
                                                                 properties:
@@ -2001,10 +2030,39 @@ paths:
                                                 type: boolean
                                             id:
                                                 type: string
+                                            inputs:
+                                                additionalProperties:
+                                                    properties:
+                                                        default: {}
+                                                        description:
+                                                            type: string
+                                                        metadata:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        source:
+                                                            type: string
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: object
                                             name:
                                                 type: string
                                             on_success:
                                                 type: string
+                                            outputs:
+                                                additionalProperties:
+                                                    properties:
+                                                        description:
+                                                            type: string
+                                                        metadata:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        source:
+                                                            type: string
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: object
                                             overrides:
                                                 nullable: true
                                                 properties:
@@ -2113,10 +2171,39 @@ paths:
                                                             type: boolean
                                                         id:
                                                             type: string
+                                                        inputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    default: {}
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         name:
                                                             type: string
                                                         on_success:
                                                             type: string
+                                                        outputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         overrides:
                                                             nullable: true
                                                             properties:
@@ -2245,10 +2332,39 @@ paths:
                                                             type: boolean
                                                         id:
                                                             type: string
+                                                        inputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    default: {}
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         name:
                                                             type: string
                                                         on_success:
                                                             type: string
+                                                        outputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         overrides:
                                                             nullable: true
                                                             properties:
@@ -2376,10 +2492,39 @@ paths:
                                                             type: boolean
                                                         id:
                                                             type: string
+                                                        inputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    default: {}
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         name:
                                                             type: string
                                                         on_success:
                                                             type: string
+                                                        outputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         overrides:
                                                             nullable: true
                                                             properties:
@@ -2501,10 +2646,39 @@ paths:
                                                 type: boolean
                                             id:
                                                 type: string
+                                            inputs:
+                                                additionalProperties:
+                                                    properties:
+                                                        default: {}
+                                                        description:
+                                                            type: string
+                                                        metadata:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        source:
+                                                            type: string
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: object
                                             name:
                                                 type: string
                                             on_success:
                                                 type: string
+                                            outputs:
+                                                additionalProperties:
+                                                    properties:
+                                                        description:
+                                                            type: string
+                                                        metadata:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        source:
+                                                            type: string
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: object
                                             overrides:
                                                 nullable: true
                                                 properties:
@@ -2614,10 +2788,39 @@ paths:
                                                             type: boolean
                                                         id:
                                                             type: string
+                                                        inputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    default: {}
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         name:
                                                             type: string
                                                         on_success:
                                                             type: string
+                                                        outputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         overrides:
                                                             nullable: true
                                                             properties:
@@ -2759,10 +2962,39 @@ paths:
                                                             type: boolean
                                                         id:
                                                             type: string
+                                                        inputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    default: {}
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         name:
                                                             type: string
                                                         on_success:
                                                             type: string
+                                                        outputs:
+                                                            additionalProperties:
+                                                                properties:
+                                                                    description:
+                                                                        type: string
+                                                                    metadata:
+                                                                        additionalProperties: {}
+                                                                        type: object
+                                                                    source:
+                                                                        type: string
+                                                                    type:
+                                                                        type: string
+                                                                type: object
+                                                            type: object
                                                         overrides:
                                                             nullable: true
                                                             properties:
@@ -2877,10 +3109,39 @@ paths:
                                                 type: boolean
                                             id:
                                                 type: string
+                                            inputs:
+                                                additionalProperties:
+                                                    properties:
+                                                        default: {}
+                                                        description:
+                                                            type: string
+                                                        metadata:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        source:
+                                                            type: string
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: object
                                             name:
                                                 type: string
                                             on_success:
                                                 type: string
+                                            outputs:
+                                                additionalProperties:
+                                                    properties:
+                                                        description:
+                                                            type: string
+                                                        metadata:
+                                                            additionalProperties: {}
+                                                            type: object
+                                                        source:
+                                                            type: string
+                                                        type:
+                                                            type: string
+                                                    type: object
+                                                type: object
                                             overrides:
                                                 nullable: true
                                                 properties:

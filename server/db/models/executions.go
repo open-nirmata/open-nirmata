@@ -64,6 +64,8 @@ type ExecutionStep struct {
 	Status           string                  `bson:"status"`                      // running, completed, failed
 	InputMessages    []ExecutionMessage      `bson:"input_messages,omitempty"`    // messages going into this stage
 	OutputMessage    *ExecutionMessage       `bson:"output_message,omitempty"`    // message produced by this stage
+	InputVariables   map[string]interface{}  `bson:"input_variables,omitempty"`   // resolved input variables
+	OutputVariables  map[string]interface{}  `bson:"output_variables,omitempty"`  // extracted output variables
 	LLMCalls         []ExecutionLLMMetadata  `bson:"llm_calls,omitempty"`         // LLM calls made in this stage
 	ToolCalls        []ExecutionToolCall     `bson:"tool_calls,omitempty"`        // tools executed in this stage
 	RetrievedContext []string                `bson:"retrieved_context,omitempty"` // knowledge retrieved
